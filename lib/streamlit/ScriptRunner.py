@@ -231,6 +231,7 @@ class ScriptRunner(object):
 
         # Reset delta generator so it starts from index 0.
         import streamlit as st
+
         st._reset()
 
         self.on_event.send(ScriptRunnerEvent.SCRIPT_STARTED)

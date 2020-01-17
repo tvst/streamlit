@@ -304,12 +304,7 @@ class DeltaGenerator(object):
     # DeltaGenerator constructor parameters (which users should never use). For
     # those, see above.
     def __init__(
-        self,
-        id=0,
-        last_index=None,
-        is_root=True,
-        container="main",
-        path=(),
+        self, id=0, last_index=None, is_root=True, container="main", path=(),
     ):
         """Inserts or updates elements in Streamlit apps.
 
@@ -364,6 +359,7 @@ class DeltaGenerator(object):
 
     def altair_chart(self, altair_chart, width=0, use_container_width=False):
         from streamlit.elements.AltairChart import AltairChart
+
         return self.write(AltairChart(altair_chart, width, use_container_width))
 
     def text(self, body):

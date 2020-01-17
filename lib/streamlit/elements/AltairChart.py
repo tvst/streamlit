@@ -23,6 +23,7 @@ from streamlit.elements import framework
 from streamlit.string_util import clean_text
 import streamlit.elements.vega_lite as vega_lite
 
+
 class AltairChart(framework.Element):
     def __init__(self, altair_chart, width=0, use_container_width=False):
         """Display a chart using the Altair library.
