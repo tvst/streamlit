@@ -152,7 +152,7 @@ def _with_element(method):
         def marshall_element(element):
             return method(dg, element, *args, **kwargs)
 
-        #return _enqueue_message(marshall_element, delta_type, last_index)
+        # return _enqueue_message(marshall_element, delta_type, last_index)
 
     return wrapped_method
 
@@ -479,8 +479,7 @@ class DeltaGenerator(object):
             def flush_buffer():
                 if string_buffer:
                     self.markdown(
-                        " ".join(string_buffer),
-                        unsafe_allow_html=unsafe_allow_html
+                        " ".join(string_buffer), unsafe_allow_html=unsafe_allow_html
                     )  # noqa: F821
                     string_buffer[:] = []
 
@@ -2737,11 +2736,11 @@ class DeltaGenerator(object):
         # Regenerate chart with data
         # XXX TODO Move these into LineChart.py etc
         if self._last_index == 0:
-            if self._delta_type == 'line_chart':
+            if self._delta_type == "line_chart":
                 self.line_chart(data)
-            elif self._delta_type == 'bar_chart':
+            elif self._delta_type == "bar_chart":
                 self.bar_chart(data)
-            elif self._delta_type == 'area_chart':
+            elif self._delta_type == "area_chart":
                 self.area_chart(data)
 
         data, self._last_index = _maybe_melt_data_for_add_rows(

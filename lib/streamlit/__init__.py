@@ -77,15 +77,19 @@ __version__ = _pkg_resources.get_distribution("streamlit").version
 # The try/except is needed for python 2/3 compatibility
 try:
 
-    if platform.system() == 'Linux' and os.path.isfile('/etc/machine-id') == False and os.path.isfile('/var/lib/dbus/machine-id') == False:
+    if (
+        platform.system() == "Linux"
+        and os.path.isfile("/etc/machine-id") == False
+        and os.path.isfile("/var/lib/dbus/machine-id") == False
+    ):
         print("Generate machine-id")
         subprocess.run(["sudo", "dbus-uuidgen", "--ensure"])
 
     machine_id = _uuid.getnode()
-    if os.path.isfile('/etc/machine-id'):
+    if os.path.isfile("/etc/machine-id"):
         with open("/etc/machine-id", "r") as f:
             machine_id = f.read()
-    elif os.path.isfile('/var/lib/dbus/machine-id'):
+    elif os.path.isfile("/var/lib/dbus/machine-id"):
         with open("/var/lib/dbus/machine-id", "r") as f:
             machine_id = f.read()
 
@@ -193,7 +197,7 @@ slider = _with_dg(_DeltaGenerator.slider)  # noqa: E221
 subheader = _with_dg(_DeltaGenerator.subheader)  # noqa: E221
 success = _with_dg(_DeltaGenerator.success)  # noqa: E221
 table = _with_dg(_DeltaGenerator.table)  # noqa: E221
-#text = _with_dg(_DeltaGenerator.text)  # noqa: E221
+# text = _with_dg(_DeltaGenerator.text)  # noqa: E221
 text_area = _with_dg(_DeltaGenerator.text_area)  # noqa: E221
 text_input = _with_dg(_DeltaGenerator.text_input)  # noqa: E221
 time_input = _with_dg(_DeltaGenerator.time_input)  # noqa: E221
@@ -234,11 +238,14 @@ def set_option(key, value):
         return
 
     raise StreamlitAPIException(
-        "{key} cannot be set on the fly. Set as command line option, e.g. streamlit run script.py --{key}, or in config.toml instead.".format(key=key)
+        "{key} cannot be set on the fly. Set as command line option, e.g. streamlit run script.py --{key}, or in config.toml instead.".format(
+            key=key
+        )
     )
 
 
 # Special methods:
+
 
 def show(*args):
     """Write arguments to your app for debugging purposes.
