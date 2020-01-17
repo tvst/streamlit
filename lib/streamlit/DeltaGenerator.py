@@ -166,7 +166,7 @@ def _with_element(method):
         def marshall_element(element):
             return method(dg, element, *args, **kwargs)
 
-        # return _enqueue_message(marshall_element, delta_type, last_index)
+        # return _enqueue_message(marshall_element, last_index)
 
     return wrapped_method
 
@@ -282,10 +282,6 @@ class DeltaGenerator(object):
     id: int or None
       ID for deltas, or None to create the root DeltaGenerator (which
         produces DeltaGenerators with incrementing IDs)
-    delta_type: str or None
-      The name of the element passed in Element.proto's oneof.
-      This is needed so we can transform dataframes for some elements when
-      performing an `add_rows`.
     last_index: int or None
       The last index of the DataFrame for the element this DeltaGenerator
       created. Only applies to elements that transform dataframes,
@@ -310,7 +306,6 @@ class DeltaGenerator(object):
     def __init__(
         self,
         id=0,
-        delta_type=None,
         last_index=None,
         is_root=True,
         container="main",
@@ -331,7 +326,8 @@ class DeltaGenerator(object):
 
         """
         self._id = id  # XXX Rename to _current_index
-        self._delta_type = delta_type  # XXX rename to _locked_delta_type
+        # XXX TODO fix delta_type
+        self._delta_type = None  # XXX rename to _locked_delta_type
         self._last_index = last_index  # XXX rename to _last_df_index.
         self._is_root = is_root  # XXX Rename to _is_locked (opposite)
         self._container = container
@@ -365,6 +361,10 @@ class DeltaGenerator(object):
             raise StreamlitAPIException(message)
 
         return wrapper
+
+    def altair_chart(self, altair_chart, width=0, use_container_width=False):
+        from streamlit.elements.AltairChart import AltairChart
+        return self.write(AltairChart(altair_chart, width, use_container_width))
 
     def text(self, body):
         return self.write(Text(body))
@@ -590,7 +590,6 @@ class DeltaGenerator(object):
 
         msg = element.msg
         rv = element.value
-        kind = msg.delta.new_element.WhichOneof("type")
         msg_was_enqueued = False
 
         # Only enqueue message if there's a container.
@@ -619,16 +618,14 @@ class DeltaGenerator(object):
             output_dg = self
 
         elif self._is_root:
-            self._id += 1
             output_dg = DeltaGenerator(
                 id=msg.metadata.delta_id,
-                delta_type=kind,
                 last_index=last_index,
                 container=self._container,
                 is_root=False,
             )
+            self._id += 1
         else:
-            self._delta_type = kind
             self._last_index = last_index
             output_dg = self
 
@@ -1067,7 +1064,7 @@ class DeltaGenerator(object):
             data_frame_proto.marshall_data_frame(data, delta.data_frame)
 
         # XXX update to use Element
-        return self._enqueue_new_element_delta(
+        return self._enqueue_element(
             set_data_frame, "dataframe", element_width=width, element_height=height
         )
 
@@ -1285,63 +1282,6 @@ class DeltaGenerator(object):
             spec,
             use_container_width=use_container_width,
             **kwargs
-        )
-
-    @_with_element
-    def altair_chart(self, element, altair_chart, width=0, use_container_width=False):
-        """Display a chart using the Altair library.
-
-        Parameters
-        ----------
-        altair_chart : altair.vegalite.v2.api.Chart
-            The Altair chart object to display.
-
-        width : number
-            Deprecated. If != 0 (default), will show an alert.
-            From now on you should set the width directly in the Altair
-            spec. Please refer to the Altair documentation for details.
-
-        use_container_width : bool
-            If True, set the chart width to the column width. This takes
-            precedence over Altair's native `width` value.
-
-        Example
-        -------
-
-        >>> import pandas as pd
-        >>> import numpy as np
-        >>> import altair as alt
-        >>>
-        >>> df = pd.DataFrame(
-        ...     np.random.randn(200, 3),
-        ...     columns=['a', 'b', 'c'])
-        ...
-        >>> c = alt.Chart(df).mark_circle().encode(
-        ...     x='a', y='b', size='c', color='c')
-        >>>
-        >>> st.altair_chart(c, width=-1)
-
-        .. output::
-           https://share.streamlit.io/0.25.0-2JkNY/index.html?id=8jmmXR8iKoZGV4kXaKGYV5
-           height: 200px
-
-        Examples of Altair charts can be found at
-        https://altair-viz.github.io/gallery/.
-
-        """
-        import streamlit.elements.altair as altair
-
-        if width != 0:
-            import streamlit as st
-
-            st.warning(
-                "The `width` argument in `st.vega_lite_chart` is deprecated and will be removed on 2020-03-04. To set the width, you should instead use altair's native `width` argument as described at https://altair-viz.github.io/user_guide/generated/toplevel/altair.Chart.html"
-            )
-
-        altair.marshall(
-            element.vega_lite_chart,
-            altair_chart,
-            use_container_width=use_container_width,
         )
 
     @_with_element
@@ -3190,4 +3130,5 @@ def _enqueue_message(msg):
         # XXX Show error?
         return False
 
-    return ctx.enqueue(msg)
+    ctx.enqueue(msg)
+    return True

@@ -145,11 +145,9 @@ def _with_dg(method):
     return method
 
 
-def _reset(main_dg, sidebar_dg):
-    main_dg._reset()
-    sidebar_dg._reset()
-    global sidebar
-    sidebar = sidebar_dg
+def _reset():
+    main._reset()
+    sidebar._reset()
     _get_report_ctx().widget_ids_this_run.clear()
 
 
@@ -161,8 +159,8 @@ main = _DeltaGenerator(container="main")
 
 text = main.text
 write = main.write
+altair_chart = main.altair_chart
 
-altair_chart = _with_dg(_DeltaGenerator.altair_chart)  # noqa: E221
 area_chart = _with_dg(_DeltaGenerator.area_chart)  # noqa: E221
 audio = _with_dg(_DeltaGenerator.audio)  # noqa: E221
 balloons = _with_dg(_DeltaGenerator.balloons)  # noqa: E221

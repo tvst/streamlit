@@ -19,7 +19,7 @@ from streamlit.elements import framework
 
 class Text(framework.Element):
     def __init__(self, body):
-        """Fixed-width preformatted text.
+        """Display some fixed-width preformatted text.
 
         Parameters
         ----------

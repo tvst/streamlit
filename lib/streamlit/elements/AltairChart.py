@@ -13,17 +13,88 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A Python wrapper around Altair."""
-
-# Python 2/3 compatibility
-from __future__ import absolute_import
-
 from datetime import date
 
-from streamlit import type_util
-import streamlit.elements.vega_lite as vega_lite
 import altair as alt
 import pandas as pd
+
+from streamlit import type_util
+from streamlit.elements import framework
+from streamlit.string_util import clean_text
+import streamlit.elements.vega_lite as vega_lite
+
+class AltairChart(framework.Element):
+    def __init__(self, altair_chart, width=0, use_container_width=False):
+        """Display a chart using the Altair library.
+
+        Parameters
+        ----------
+        altair_chart : altair.vegalite.v2.api.Chart
+            The Altair chart object to display.
+
+        width : number
+            Deprecated. If != 0 (default), will show an alert.
+            From now on you should set the width directly in the Altair
+            spec. Please refer to the Altair documentation for details.
+
+        use_container_width : bool
+            If True, set the chart width to the column width. This takes
+            precedence over Altair's native `width` value.
+
+        Example
+        -------
+
+        >>> import pandas as pd
+        >>> import numpy as np
+        >>> import altair as alt
+        >>>
+        >>> df = pd.DataFrame(
+        ...     np.random.randn(200, 3),
+        ...     columns=['a', 'b', 'c'])
+        ...
+        >>> c = alt.Chart(df).mark_circle().encode(
+        ...     x='a', y='b', size='c', color='c')
+        >>>
+        >>> st.altair_chart(c, width=-1)
+
+        .. output::
+           https://share.streamlit.io/0.25.0-2JkNY/index.html?id=8jmmXR8iKoZGV4kXaKGYV5
+           height: 200px
+
+        Examples of Altair charts can be found at
+        https://altair-viz.github.io/gallery/.
+
+        """
+        super(AltairChart, self).__init__()
+
+        # Normally altair_chart.to_dict() would transform the dataframe used by the
+        # chart into an array of dictionaries. To avoid that, we install a
+        # transformer that replaces datasets with a reference by the object id of
+        # the dataframe. We then fill in the dataset manually later on.
+
+        datasets = {}
+
+        def id_transform(data):
+            """Altair data transformer that returns a fake named dataset with the
+            object id."""
+            datasets[id(data)] = data
+            return {"name": str(id(data))}
+
+        alt.data_transformers.register("id", id_transform)
+
+        with alt.data_transformers.enable("id"):
+            chart_dict = altair_chart.to_dict()
+
+            # Put datasets back into the chart dict but note how they weren't
+            # transformed.
+            chart_dict["datasets"] = datasets
+
+            vega_lite.marshall(
+                self.msg.delta.new_element.vega_lite_chart,
+                data=None,
+                spec=chart_dict,
+                use_container_width=use_container_width,
+            )
 
 
 def _is_date_column(df, name):
@@ -91,36 +162,3 @@ def generate_chart(chart_type, data, width=0, height=0):
         .interactive()
     )
     return chart
-
-
-def marshall(vega_lite_chart, altair_chart, use_container_width=False, **kwargs):
-    import altair as alt
-
-    # Normally altair_chart.to_dict() would transform the dataframe used by the
-    # chart into an array of dictionaries. To avoid that, we install a
-    # transformer that replaces datasets with a reference by the object id of
-    # the dataframe. We then fill in the dataset manually later on.
-
-    datasets = {}
-
-    def id_transform(data):
-        """Altair data transformer that returns a fake named dataset with the
-        object id."""
-        datasets[id(data)] = data
-        return {"name": str(id(data))}
-
-    alt.data_transformers.register("id", id_transform)
-
-    with alt.data_transformers.enable("id"):
-        chart_dict = altair_chart.to_dict()
-
-        # Put datasets back into the chart dict but note how they weren't
-        # transformed.
-        chart_dict["datasets"] = datasets
-
-        vega_lite.marshall(
-            vega_lite_chart,
-            chart_dict,
-            use_container_width=use_container_width,
-            **kwargs
-        )
