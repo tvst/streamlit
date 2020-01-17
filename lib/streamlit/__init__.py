@@ -79,8 +79,8 @@ try:
 
     if platform.system() == 'Linux' and os.path.isfile('/etc/machine-id') == False and os.path.isfile('/var/lib/dbus/machine-id') == False:
         print("Generate machine-id")
-        subprocess.run(["sudo", "dbus-uuidgen", "--ensure"])   
-    
+        subprocess.run(["sudo", "dbus-uuidgen", "--ensure"])
+
     machine_id = _uuid.getnode()
     if os.path.isfile('/etc/machine-id'):
         with open("/etc/machine-id", "r") as f:
@@ -90,20 +90,18 @@ try:
             machine_id = f.read()
 
     __installation_id__ = str(_uuid.uuid5(_uuid.NAMESPACE_DNS, str(machine_id)))
-    
+
 except UnicodeDecodeError:
     __installation_id__ = str(
         _uuid.uuid5(_uuid.NAMESPACE_DNS, str(_uuid.getnode()).encode("utf-8"))
     )
 
 import contextlib as _contextlib
-import functools as _functools
 import re as _re
 import sys as _sys
 import textwrap as _textwrap
 import threading as _threading
 import traceback as _traceback
-import types as _types
 import json as _json
 import numpy as _np
 
@@ -119,9 +117,6 @@ from streamlit.errors import StreamlitAPIException
 
 # Modules that the user should have access to.
 from streamlit.caching import cache  # noqa: F401
-
-# Delta generator with no queue so it can't send anything out.
-_NULL_DELTA_GENERATOR = _DeltaGenerator(None)
 
 # This is set to True inside cli._main_run(), and is False otherwise.
 # If False, we should assume that DeltaGenerator functions are effectively
@@ -140,14 +135,9 @@ def _set_log_level():
 _config.on_config_parsed(_set_log_level)
 
 
+# XXX REMOVE
 def _with_dg(method):
-    @_functools.wraps(method)
-    def wrapped_method(*args, **kwargs):
-        ctx = _get_report_ctx()
-        dg = ctx.main_dg if ctx is not None else _NULL_DELTA_GENERATOR
-        return method(dg, *args, **kwargs)
-
-    return wrapped_method
+    return method
 
 
 def _reset(main_dg, sidebar_dg):
@@ -159,9 +149,13 @@ def _reset(main_dg, sidebar_dg):
 
 
 # Sidebar
-sidebar = _NULL_DELTA_GENERATOR
+sidebar = _DeltaGenerator(container="sidebar")
+main = _DeltaGenerator(container="main")
 
 # DeltaGenerator methods:
+
+text = main.text
+write = main.write
 
 altair_chart = _with_dg(_DeltaGenerator.altair_chart)  # noqa: E221
 area_chart = _with_dg(_DeltaGenerator.area_chart)  # noqa: E221
@@ -199,7 +193,7 @@ slider = _with_dg(_DeltaGenerator.slider)  # noqa: E221
 subheader = _with_dg(_DeltaGenerator.subheader)  # noqa: E221
 success = _with_dg(_DeltaGenerator.success)  # noqa: E221
 table = _with_dg(_DeltaGenerator.table)  # noqa: E221
-text = _with_dg(_DeltaGenerator.text)  # noqa: E221
+#text = _with_dg(_DeltaGenerator.text)  # noqa: E221
 text_area = _with_dg(_DeltaGenerator.text_area)  # noqa: E221
 text_input = _with_dg(_DeltaGenerator.text_input)  # noqa: E221
 time_input = _with_dg(_DeltaGenerator.time_input)  # noqa: E221
@@ -217,8 +211,8 @@ def set_option(key, value):
     """Set config option.
 
     Currently, only two config options can be set within the script itself:
-        * client.caching 
-        * client.displayEnabled 
+        * client.caching
+        * client.displayEnabled
 
     Calling with any other options will raise StreamlitAPIException.
 
@@ -245,212 +239,6 @@ def set_option(key, value):
 
 
 # Special methods:
-
-_DATAFRAME_LIKE_TYPES = (
-    "DataFrame",  # pandas.core.frame.DataFrame
-    "Index",  # pandas.core.indexes.base.Index
-    "Series",  # pandas.core.series.Series
-    "Styler",  # pandas.io.formats.style.Styler
-    "ndarray",  # numpy.ndarray
-)
-
-_HELP_TYPES = (
-    _types.BuiltinFunctionType,
-    _types.BuiltinMethodType,
-    _types.FunctionType,
-    _types.MethodType,
-    _types.ModuleType,
-)
-
-if not _is_running_py3():
-    _HELP_TYPES = list(_HELP_TYPES)
-    _HELP_TYPES.append(_types.ClassType)
-    _HELP_TYPES.append(_types.InstanceType)
-    _HELP_TYPES = tuple(_HELP_TYPES)
-
-
-def write(*args, **kwargs):
-    """Write arguments to the app.
-
-    This is the swiss-army knife of Streamlit commands. It does different
-    things depending on what you throw at it.
-
-    Unlike other Streamlit commands, write() has some unique properties:
-
-        1. You can pass in multiple arguments, all of which will be written.
-        2. Its behavior depends on the input types as follows.
-        3. It returns None, so it's "slot" in the App cannot be reused.
-
-    Parameters
-    ----------
-    *args : any
-        One or many objects to print to the App.
-
-        Arguments are handled as follows:
-
-            - write(string)     : Prints the formatted Markdown string.
-            - write(data_frame) : Displays the DataFrame as a table.
-            - write(error)      : Prints an exception specially.
-            - write(func)       : Displays information about a function.
-            - write(module)     : Displays information about the module.
-            - write(dict)       : Displays dict in an interactive widget.
-            - write(obj)        : The default is to print str(obj).
-            - write(mpl_fig)    : Displays a Matplotlib figure.
-            - write(altair)     : Displays an Altair chart.
-            - write(keras)      : Displays a Keras model.
-            - write(graphviz)   : Displays a Graphviz graph.
-            - write(plotly_fig) : Displays a Plotly figure.
-            - write(bokeh_fig)  : Displays a Bokeh figure.
-            - write(sympy_expr) : Prints SymPy expression using LaTeX.
-
-    unsafe_allow_html : bool
-        This is a keyword-only argument that defaults to False.
-
-        By default, any HTML tags found in strings will be escaped and
-        therefore treated as pure text. This behavior may be turned off by
-        setting this argument to True.
-
-        That said, *we strongly advise* against it*. It is hard to write secure
-        HTML, so by using this argument you may be compromising your users'
-        security. For more information, see:
-
-        https://github.com/streamlit/streamlit/issues/152
-
-        *Also note that `unsafe_allow_html` is a temporary measure and may be
-        removed from Streamlit at any time.*
-
-        If you decide to turn on HTML anyway, we ask you to please tell us your
-        exact use case here:
-
-        https://discuss.streamlit.io/t/96
-
-        This will help us come up with safe APIs that allow you to do what you
-        want.
-
-    Example
-    -------
-
-    Its simplest use case is to draw Markdown-formatted text, whenever the
-    input is a string:
-
-    >>> write('Hello, *World!*')
-
-    .. output::
-       https://share.streamlit.io/0.25.0-2JkNY/index.html?id=DUJaq97ZQGiVAFi6YvnihF
-       height: 50px
-
-    As mentioned earlier, `st.write()` also accepts other data formats, such as
-    numbers, data frames, styled data frames, and assorted objects:
-
-    >>> st.write(1234)
-    >>> st.write(pd.DataFrame({
-    ...     'first column': [1, 2, 3, 4],
-    ...     'second column': [10, 20, 30, 40],
-    ... }))
-
-    .. output::
-       https://share.streamlit.io/0.25.0-2JkNY/index.html?id=FCp9AMJHwHRsWSiqMgUZGD
-       height: 250px
-
-    Finally, you can pass in multiple arguments to do things like:
-
-    >>> st.write('1 + 1 = ', 2)
-    >>> st.write('Below is a DataFrame:', data_frame, 'Above is a dataframe.')
-
-    .. output::
-       https://share.streamlit.io/0.25.0-2JkNY/index.html?id=DHkcU72sxYcGarkFbf4kK1
-       height: 300px
-
-    Oh, one more thing: `st.write` accepts chart objects too! For example:
-
-    >>> import pandas as pd
-    >>> import numpy as np
-    >>> import altair as alt
-    >>>
-    >>> df = pd.DataFrame(
-    ...     np.random.randn(200, 3),
-    ...     columns=['a', 'b', 'c'])
-    ...
-    >>> c = alt.Chart(df).mark_circle().encode(
-    ...     x='a', y='b', size='c', color='c')
-    >>>
-    >>> st.write(c)
-
-    .. output::
-       https://share.streamlit.io/0.25.0-2JkNY/index.html?id=8jmmXR8iKoZGV4kXaKGYV5
-       height: 200px
-
-    """
-    # Python2 doesn't support this syntax
-    #   def write(*args, unsafe_allow_html=False)
-    # so we do this instead:
-    unsafe_allow_html = kwargs.get("unsafe_allow_html", False)
-
-    try:
-        string_buffer = []
-
-        def flush_buffer():
-            if string_buffer:
-                markdown(
-                    " ".join(string_buffer), unsafe_allow_html=unsafe_allow_html
-                )  # noqa: F821
-                string_buffer[:] = []
-
-        for arg in args:
-            # Order matters!
-            if isinstance(arg, string_types):  # noqa: F821
-                string_buffer.append(arg)
-            elif type(arg).__name__ in _DATAFRAME_LIKE_TYPES:
-                flush_buffer()
-                if len(_np.shape(arg)) > 2:
-                    text(arg)
-                else:
-                    dataframe(arg)  # noqa: F821
-            elif isinstance(arg, Exception):
-                flush_buffer()
-                exception(arg)  # noqa: F821
-            elif isinstance(arg, _HELP_TYPES):
-                flush_buffer()
-                help(arg)
-            elif _type_util.is_altair_chart(arg):
-                flush_buffer()
-                altair_chart(arg)
-            elif _type_util.is_type(arg, "matplotlib.figure.Figure"):
-                flush_buffer()
-                pyplot(arg)
-            elif _type_util.is_plotly_chart(arg):
-                flush_buffer()
-                plotly_chart(arg)
-            elif _type_util.is_type(arg, "bokeh.plotting.figure.Figure"):
-                flush_buffer()
-                bokeh_chart(arg)
-            elif _type_util.is_graphviz_chart(arg):
-                flush_buffer()
-                graphviz_chart(arg)
-            elif _type_util.is_sympy_expession(arg):
-                flush_buffer()
-                latex(arg)
-            elif _type_util.is_keras_model(arg):
-                from tensorflow.python.keras.utils import vis_utils
-
-                flush_buffer()
-                dot = vis_utils.model_to_dot(arg)
-                graphviz_chart(dot.to_string())
-            elif (type(arg) in dict_types) or (isinstance(arg, list)):  # noqa: F821
-                flush_buffer()
-                json(arg)
-            elif _type_util.is_namedtuple(arg):
-                flush_buffer()
-                json(_json.dumps(arg._asdict()))
-            else:
-                string_buffer.append("`%s`" % str(arg).replace("`", "\\`"))
-
-        flush_buffer()
-
-    except Exception:
-        _, exc, exc_tb = _sys.exc_info()
-        exception(exc, exc_tb)  # noqa: F821
-
 
 def show(*args):
     """Write arguments to your app for debugging purposes.

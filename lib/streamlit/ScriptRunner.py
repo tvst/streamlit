@@ -48,7 +48,7 @@ class ScriptRunnerEvent(Enum):
 
 
 class ScriptRunner(object):
-    def __init__(self, report, main_dg, sidebar_dg, widget_states, request_queue):
+    def __init__(self, report, widget_states, request_queue):
         """Initialize the ScriptRunner.
 
         (The ScriptRunner won't start executing until start() is called.)
@@ -74,8 +74,6 @@ class ScriptRunner(object):
 
         """
         self._report = report
-        self._main_dg = main_dg
-        self._sidebar_dg = sidebar_dg
         self._request_queue = request_queue
 
         self._widgets = Widgets()
@@ -121,8 +119,7 @@ class ScriptRunner(object):
             raise Exception("ScriptRunner was already started")
 
         self._script_thread = ReportThread(
-            main_dg=self._main_dg,
-            sidebar_dg=self._sidebar_dg,
+            enqueue=self._report.enqueue,
             widgets=self._widgets,
             target=self._process_request_queue,
             name="ScriptRunner.scriptThread",
@@ -233,8 +230,6 @@ class ScriptRunner(object):
 
         # Reset delta generator so it starts from index 0.
         import streamlit as st
-
-        st._reset(self._main_dg, self._sidebar_dg)
 
         self.on_event.send(ScriptRunnerEvent.SCRIPT_STARTED)
 

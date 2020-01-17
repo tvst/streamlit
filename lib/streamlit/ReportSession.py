@@ -34,7 +34,6 @@ from streamlit.ScriptRunner import ScriptRunner
 from streamlit.ScriptRunner import ScriptRunnerEvent
 from streamlit.credentials import Credentials
 from streamlit.logger import get_logger
-from streamlit.proto.BlockPath_pb2 import BlockPath
 from streamlit.proto.ForwardMsg_pb2 import ForwardMsg
 from streamlit.proto.Widget_pb2 import WidgetStates
 from streamlit.server.server_util import serialize_forward_msg
@@ -86,11 +85,6 @@ class ReportSession(object):
         self._report = Report(script_path, command_line)
 
         self._state = ReportSessionState.REPORT_NOT_RUNNING
-
-        self._main_dg = DeltaGenerator(enqueue=self.enqueue, container=BlockPath.MAIN)
-        self._sidebar_dg = DeltaGenerator(
-            enqueue=self.enqueue, container=BlockPath.SIDEBAR
-        )
 
         self._widget_states = WidgetStates()
         self._local_sources_watcher = LocalSourcesWatcher(
@@ -506,8 +500,6 @@ class ReportSession(object):
         # Create the ScriptRunner, attach event handlers, and start it
         self._scriptrunner = ScriptRunner(
             report=self._report,
-            main_dg=self._main_dg,
-            sidebar_dg=self._sidebar_dg,
             widget_states=self._widget_states,
             request_queue=self._script_request_queue,
         )

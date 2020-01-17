@@ -17,7 +17,10 @@
 
 # Python 2/3 compatibility
 from __future__ import print_function, division, unicode_literals, absolute_import
-from streamlit.compatibility import setup_2_3_shims
+from streamlit.compatibility import (
+    setup_2_3_shims as setup_2_3_shims,
+    is_running_py3 as is_running_py3,
+)
 
 setup_2_3_shims(globals())
 
@@ -25,6 +28,9 @@ import functools
 import json
 import random
 import textwrap
+import sys
+import types
+
 import pandas as pd
 from datetime import datetime
 from datetime import date
@@ -33,6 +39,8 @@ from datetime import time
 from streamlit import caching
 from streamlit import metrics
 from streamlit.ReportThread import get_report_ctx
+import streamlit.elements.framework as framework
+from streamlit.elements.Text import Text
 from streamlit.errors import DuplicateWidgetID
 from streamlit.errors import StreamlitAPIException
 from streamlit.proto import Balloons_pb2
@@ -51,6 +59,28 @@ MAX_DELTA_BYTES = 14 * 1024 * 1024  # 14MB
 # List of Streamlit commands that perform a Pandas "melt" operation on
 # input dataframes.
 DELTAS_TYPES_THAT_MELT_DATAFRAMES = ("line_chart", "area_chart", "bar_chart")
+
+_DATAFRAME_LIKE_TYPES = (
+    "DataFrame",  # pandas.core.frame.DataFrame
+    "Index",  # pandas.core.indexes.base.Index
+    "Series",  # pandas.core.series.Series
+    "Styler",  # pandas.io.formats.style.Styler
+    "ndarray",  # numpy.ndarray
+)
+
+_HELP_TYPES = (
+    types.BuiltinFunctionType,
+    types.BuiltinMethodType,
+    types.FunctionType,
+    types.MethodType,
+    types.ModuleType,
+)
+
+if not is_running_py3():
+    _HELP_TYPES = list(_HELP_TYPES)
+    _HELP_TYPES.append(types.ClassType)
+    _HELP_TYPES.append(types.InstanceType)
+    _HELP_TYPES = tuple(_HELP_TYPES)
 
 
 def _wraps_with_cleaned_sig(wrapped, num_args_to_remove):
@@ -84,6 +114,7 @@ def _remove_self_from_sig(method):
     return wrapped_method
 
 
+# XXX Remove
 def _with_element(method):
     """Wrap function and pass a NewElement proto to be filled.
 
@@ -121,7 +152,7 @@ def _with_element(method):
         def marshall_element(element):
             return method(dg, element, *args, **kwargs)
 
-        return dg._enqueue_new_element_delta(marshall_element, delta_type, last_index)
+        #return _enqueue_message(marshall_element, delta_type, last_index)
 
     return wrapped_method
 
@@ -186,6 +217,7 @@ def _set_widget_id(widget_type, element, user_key=None):
     el.id = widget_id
 
 
+# XXX Move this somewhere else?
 def _get_widget_ui_value(widget_type, element, user_key=None):
     """Get the widget ui_value from the report context.
     NOTE: This function should be called after the proto has been filled.
@@ -227,23 +259,12 @@ def _get_pandas_index_attr(data, attr):
         return None
 
 
-class NoValue(object):
-    """Return this from DeltaGenerator.foo_widget() when you want the st.foo_widget()
-    call to return None. This is needed because `_enqueue_new_element_delta`
-    replaces `None` with a `DeltaGenerator` (for use in non-widget elements).
-    """
-
-    pass
-
-
+# TODO: Rename Cursor
 class DeltaGenerator(object):
     """Creator of Delta protobuf messages.
 
     Parameters
     ----------
-    enqueue: callable or None
-      Function that (maybe) enqueues ForwardMsg's and returns True if
-        enqueued or False if not.
     id: int or None
       ID for deltas, or None to create the root DeltaGenerator (which
         produces DeltaGenerators with incrementing IDs)
@@ -260,8 +281,10 @@ class DeltaGenerator(object):
       auto-incrementing ID (in which case, `id` should be None).
       If False, this will have a fixed ID as determined
       by the `id` argument.
-    container: BlockPath
-      The root container for this DeltaGenerator. Can be MAIN or SIDEBAR.
+    container: "main" or "sidebar" or None
+      The root container for this DeltaGenerator. If None, this is a null
+      DeltaGenerator which doesn't print to the app at all (useful for
+      testing).
     path: tuple of ints
       The full path of this DeltaGenerator, consisting of the IDs of
       all ancestors. The 0th item is the topmost ancestor.
@@ -273,12 +296,11 @@ class DeltaGenerator(object):
     # those, see above.
     def __init__(
         self,
-        enqueue,
         id=0,
         delta_type=None,
         last_index=None,
         is_root=True,
-        container=BlockPath_pb2.BlockPath.MAIN,
+        container="main",
         path=(),
     ):
         """Inserts or updates elements in Streamlit apps.
@@ -295,11 +317,10 @@ class DeltaGenerator(object):
         an element `foo` inside the sidebar.
 
         """
-        self._enqueue = enqueue
-        self._id = id
-        self._delta_type = delta_type
-        self._last_index = last_index
-        self._is_root = is_root
+        self._id = id  # XXX Rename to _current_index
+        self._delta_type = delta_type  # XXX rename to _locked_delta_type
+        self._last_index = last_index  # XXX rename to _last_df_index.
+        self._is_root = is_root  # XXX Rename to _is_locked (opposite)
         self._container = container
         self._path = path
 
@@ -312,7 +333,7 @@ class DeltaGenerator(object):
 
         def wrapper(*args, **kwargs):
             if name in streamlit_methods:
-                if self._container == BlockPath_pb2.BlockPath.SIDEBAR:
+                if self._container == "sidebar":
                     message = (
                         "Method `%(name)s()` does not exist for "
                         "`st.sidebar`. Did you mean `st.%(name)s()`?" % {"name": name}
@@ -332,26 +353,214 @@ class DeltaGenerator(object):
 
         return wrapper
 
+    def text(self, body):
+        return self.write(Text(body))
+
+    def write(self, *args, **kwargs):
+        """Write arguments to the app.
+
+        This is the swiss-army knife of Streamlit commands. It does different
+        things depending on what you throw at it.
+
+        Unlike other Streamlit commands, write() has some unique properties:
+
+            1. You can pass in multiple arguments, all of which will be written.
+            2. Its behavior depends on the input types as follows.
+            3. It returns None, so it's "slot" in the App cannot be reused.
+
+        Parameters
+        ----------
+        *args : any
+            One or many objects to print to the App.
+
+            Arguments are handled as follows:
+
+                - write(string)     : Prints the formatted Markdown string.
+                - write(data_frame) : Displays the DataFrame as a table.
+                - write(error)      : Prints an exception specially.
+                - write(func)       : Displays information about a function.
+                - write(module)     : Displays information about the module.
+                - write(dict)       : Displays dict in an interactive widget.
+                - write(obj)        : The default is to print str(obj).
+                - write(mpl_fig)    : Displays a Matplotlib figure.
+                - write(altair)     : Displays an Altair chart.
+                - write(keras)      : Displays a Keras model.
+                - write(graphviz)   : Displays a Graphviz graph.
+                - write(plotly_fig) : Displays a Plotly figure.
+                - write(bokeh_fig)  : Displays a Bokeh figure.
+                - write(sympy_expr) : Prints SymPy expression using LaTeX.
+
+        unsafe_allow_html : bool
+            This is a keyword-only argument that defaults to False.
+
+            By default, any HTML tags found in strings will be escaped and
+            therefore treated as pure text. This behavior may be turned off by
+            setting this argument to True.
+
+            That said, *we strongly advise* against it*. It is hard to write secure
+            HTML, so by using this argument you may be compromising your users'
+            security. For more information, see:
+
+            https://github.com/streamlit/streamlit/issues/152
+
+            *Also note that `unsafe_allow_html` is a temporary measure and may be
+            removed from Streamlit at any time.*
+
+            If you decide to turn on HTML anyway, we ask you to please tell us your
+            exact use case here:
+
+            https://discuss.streamlit.io/t/96
+
+            This will help us come up with safe APIs that allow you to do what you
+            want.
+
+        Example
+        -------
+
+        Its simplest use case is to draw Markdown-formatted text, whenever the
+        input is a string:
+
+        >>> write('Hello, *World!*')
+
+        .. output::
+           https://share.streamlit.io/0.25.0-2JkNY/index.html?id=DUJaq97ZQGiVAFi6YvnihF
+           height: 50px
+
+        As mentioned earlier, `st.write()` also accepts other data formats, such as
+        numbers, data frames, styled data frames, and assorted objects:
+
+        >>> st.write(1234)
+        >>> st.write(pd.DataFrame({
+        ...     'first column': [1, 2, 3, 4],
+        ...     'second column': [10, 20, 30, 40],
+        ... }))
+
+        .. output::
+           https://share.streamlit.io/0.25.0-2JkNY/index.html?id=FCp9AMJHwHRsWSiqMgUZGD
+           height: 250px
+
+        Finally, you can pass in multiple arguments to do things like:
+
+        >>> st.write('1 + 1 = ', 2)
+        >>> st.write('Below is a DataFrame:', data_frame, 'Above is a dataframe.')
+
+        .. output::
+           https://share.streamlit.io/0.25.0-2JkNY/index.html?id=DHkcU72sxYcGarkFbf4kK1
+           height: 300px
+
+        Oh, one more thing: `st.write` accepts chart objects too! For example:
+
+        >>> import pandas as pd
+        >>> import numpy as np
+        >>> import altair as alt
+        >>>
+        >>> df = pd.DataFrame(
+        ...     np.random.randn(200, 3),
+        ...     columns=['a', 'b', 'c'])
+        ...
+        >>> c = alt.Chart(df).mark_circle().encode(
+        ...     x='a', y='b', size='c', color='c')
+        >>>
+        >>> st.write(c)
+
+        .. output::
+           https://share.streamlit.io/0.25.0-2JkNY/index.html?id=8jmmXR8iKoZGV4kXaKGYV5
+           height: 200px
+
+        """
+        # Python2 doesn't support this syntax
+        #   def write(*args, unsafe_allow_html=False)
+        # so we do this instead:
+        unsafe_allow_html = kwargs.get("unsafe_allow_html", False)
+
+        try:
+            string_buffer = []
+
+            def flush_buffer():
+                if string_buffer:
+                    self.markdown(
+                        " ".join(string_buffer),
+                        unsafe_allow_html=unsafe_allow_html
+                    )  # noqa: F821
+                    string_buffer[:] = []
+
+            for arg in args:
+                # Order matters!
+                if isinstance(arg, string_types):  # noqa: F821
+                    string_buffer.append(arg)
+                elif isinstance(arg, framework.Element):
+                    flush_buffer()
+                    self._enqueue_element(arg)
+                    # XXX TODO: Do this to other write() methods
+                elif type(arg).__name__ in _DATAFRAME_LIKE_TYPES:
+                    flush_buffer()
+                    if len(_np.shape(arg)) > 2:
+                        self.text(arg)
+                    else:
+                        self.dataframe(arg)  # noqa: F821
+                elif isinstance(arg, Exception):
+                    flush_buffer()
+                    self.exception(arg)  # noqa: F821
+                elif isinstance(arg, _HELP_TYPES):
+                    flush_buffer()
+                    self.help(arg)
+                elif _type_util.is_altair_chart(arg):
+                    flush_buffer()
+                    self.altair_chart(arg)
+                elif _type_util.is_type(arg, "matplotlib.figure.Figure"):
+                    flush_buffer()
+                    self.pyplot(arg)
+                elif _type_util.is_plotly_chart(arg):
+                    flush_buffer()
+                    self.plotly_chart(arg)
+                elif _type_util.is_type(arg, "bokeh.plotting.figure.Figure"):
+                    flush_buffer()
+                    self.bokeh_chart(arg)
+                elif _type_util.is_graphviz_chart(arg):
+                    flush_buffer()
+                    self.graphviz_chart(arg)
+                elif _type_util.is_sympy_expession(arg):
+                    flush_buffer()
+                    self.latex(arg)
+                elif _type_util.is_keras_model(arg):
+                    from tensorflow.python.keras.utils import vis_utils
+
+                    flush_buffer()
+                    dot = vis_utils.model_to_dot(arg)
+                    self.graphviz_chart(dot.to_string())
+                elif (type(arg) in dict_types) or (isinstance(arg, list)):  # noqa: F821
+                    flush_buffer()
+                    self.json(arg)
+                elif _type_util.is_namedtuple(arg):
+                    flush_buffer()
+                    self.json(_json.dumps(arg._asdict()))
+                else:
+                    string_buffer.append("`%s`" % str(arg).replace("`", "\\`"))
+
+            flush_buffer()
+
+        except Exception:
+            _, exc, exc_tb = sys.exc_info()
+            self.exception(exc, exc_tb)  # noqa: F821
+
     # Protected (should be used only by Streamlit, not by users).
     def _reset(self):
         """Reset delta generator so it starts from index 0."""
         assert self._is_root
         self._id = 0
 
-    def _enqueue_new_element_delta(
+    def _enqueue_element(
         self,
-        marshall_element,
-        delta_type,
+        element,
         last_index=None,
-        elementWidth=None,
+        elementWidth=None,  # XXX Pull this from the Element.
         elementHeight=None,
     ):
         """Create NewElement delta, fill it, and enqueue it.
 
         Parameters
         ----------
-        marshall_element : callable
-            Function which sets the fields for a NewElement protobuf.
+        element : framework.Element
         elementWidth : int or None
             Desired width for the element
         elementHeight : int or None
@@ -364,65 +573,61 @@ class DeltaGenerator(object):
             element.
 
         """
+        # Warn if we're called from within an @st.cache function
+        caching.maybe_show_cached_st_function_warning(self)
 
-        def value_or_dg(value, dg):
-            """Widgets have return values unlike other elements and may want to
-            return `None`. We create a special `NoValue` class for this scenario
-            since `None` return values get replaced with a DeltaGenerator.
-            """
-            if value is NoValue:
-                return None
-            if value is None:
-                return dg
-            return value
+        msg = element.msg
+        rv = element.value
+        kind = msg.delta.new_element.WhichOneof("type")
 
-        rv = None
-        if marshall_element:
-            msg = ForwardMsg_pb2.ForwardMsg()
-            rv = marshall_element(msg.delta.new_element)
-            msg.metadata.parent_block.container = self._container
-            msg.metadata.parent_block.path[:] = self._path
-            msg.metadata.delta_id = self._id
-            if elementWidth is not None:
-                msg.metadata.element_dimension_spec.width = elementWidth
-            if elementHeight is not None:
-                msg.metadata.element_dimension_spec.height = elementHeight
+        # Containerless deltagenerators don't send anything.
+        if self._container is None:
+            return _value_or_dg(rv, self)
 
-        # "Null" delta generators (those without queues), don't send anything.
-        if self._enqueue is None:
-            return value_or_dg(rv, self)
+        # Update element metadata.
+
+        assert self._container in ("sidebar", "main")
+
+        if self._container == "sidebar":
+            msg.metadata.parent_block.container = BlockPath_pb2.BlockPath.SIDEBAR
+        else:
+            msg.metadata.parent_block.container = BlockPath_pb2.BlockPath.MAIN
+
+        msg.metadata.parent_block.path[:] = self._path
+        msg.metadata.delta_id = self._id
+
+        if elementWidth is not None:
+            msg.metadata.element_dimension_spec.width = elementWidth
+        if elementHeight is not None:
+            msg.metadata.element_dimension_spec.height = elementHeight
 
         # Figure out if we need to create a new ID for this element.
+
         if self._is_root:
             output_dg = DeltaGenerator(
-                enqueue=self._enqueue,
                 id=msg.metadata.delta_id,
-                delta_type=delta_type,
+                delta_type=kind,
                 last_index=last_index,
                 container=self._container,
                 is_root=False,
             )
         else:
-            self._delta_type = delta_type
+            self._delta_type = kind
             self._last_index = last_index
             output_dg = self
 
-        kind = msg.delta.new_element.WhichOneof("type")
-
-        m = metrics.Client.get("streamlit_enqueue_deltas_total")
-        m.labels(kind).inc()
-        msg_was_enqueued = self._enqueue(msg)
+        msg_was_enqueued = _enqueue_message(msg)
 
         if not msg_was_enqueued:
-            return value_or_dg(rv, self)
+            return _value_or_dg(rv, self)
 
         if self._is_root:
             self._id += 1
 
-        return value_or_dg(rv, output_dg)
+        return _value_or_dg(rv, output_dg)
 
     def _block(self):
-        if self._enqueue is None:
+        if self._container is None:
             return self
 
         msg = ForwardMsg_pb2.ForwardMsg()
@@ -432,14 +637,13 @@ class DeltaGenerator(object):
         msg.metadata.delta_id = self._id
 
         new_block_dg = DeltaGenerator(
-            enqueue=self._enqueue,
             id=0,
             is_root=True,
             container=self._container,
             path=self._path + (self._id,),
         )
 
-        self._enqueue(msg)
+        enqueue(msg)
         self._id += 1
 
         return new_block_dg
@@ -457,27 +661,6 @@ class DeltaGenerator(object):
         """
         element.balloons.type = Balloons_pb2.Balloons.DEFAULT
         element.balloons.execution_id = random.randrange(0xFFFFFFFF)
-
-    @_with_element
-    def text(self, element, body):
-        """Write fixed-width and preformatted text.
-
-        Parameters
-        ----------
-        body : str
-            The string to display.
-
-        Example
-        -------
-        >>> st.text('This is some text.')
-
-        .. output::
-           https://share.streamlit.io/0.25.0-2JkNY/index.html?id=PYxU1kee5ubuhGR11NsnT1
-           height: 50px
-
-        """
-
-        element.text.body = _clean_text(body)
 
     @_with_element
     def markdown(self, element, body, unsafe_allow_html=False):
@@ -872,7 +1055,8 @@ class DeltaGenerator(object):
         def set_data_frame(delta):
             data_frame_proto.marshall_data_frame(data, delta.data_frame)
 
-        return self._enqueue_new_element_delta(
+        # XXX update to use Element
+        return self._enqueue_element(
             set_data_frame, "dataframe", elementWidth=width, elementHeight=height
         )
 
@@ -1595,7 +1779,7 @@ class DeltaGenerator(object):
             if not isinstance(default_values, list):
                 default_values = [default_values]
 
-            for value in default_values:                
+            for value in default_values:
                 if value not in options:
                     raise StreamlitAPIException(
                         "Every Multiselect default value must exist in options"
@@ -1672,7 +1856,7 @@ class DeltaGenerator(object):
 
         ui_value = _get_widget_ui_value("radio", element, user_key=key)
         current_value = ui_value if ui_value is not None else index
-        return options[current_value] if len(options) > 0 else NoValue
+        return options[current_value] if len(options) > 0 else framework.NoValue
 
     @_with_element
     def selectbox(self, element, label, options, index=0, format_func=str, key=None):
@@ -1726,7 +1910,7 @@ class DeltaGenerator(object):
 
         ui_value = _get_widget_ui_value("selectbox", element, user_key=key)
         current_value = ui_value if ui_value is not None else index
-        return options[current_value] if len(options) > 0 else NoValue
+        return options[current_value] if len(options) > 0 else framework.NoValue
 
     @_with_element
     def slider(
@@ -2099,7 +2283,7 @@ class DeltaGenerator(object):
         label,
         min_value=None,
         max_value=None,
-        value=NoValue(),
+        value=framework.NoValue,
         step=None,
         format=None,
         key=None,
@@ -2144,7 +2328,7 @@ class DeltaGenerator(object):
         >>> st.write('The current number is ', number)
         """
 
-        if isinstance(value, NoValue):
+        if value is framework.NoValue:
             if min_value:
                 value = min_value
             else:
@@ -2531,7 +2715,7 @@ class DeltaGenerator(object):
         >>> my_chart.add_rows(some_fancy_name=df2)  # <-- name used as keyword
 
         """
-        if self._enqueue is None:
+        if self._container is None:
             return self
 
         if self._is_root:
@@ -2551,6 +2735,7 @@ class DeltaGenerator(object):
             )
 
         # Regenerate chart with data
+        # XXX TODO Move these into LineChart.py etc
         if self._last_index == 0:
             if self._delta_type == 'line_chart':
                 self.line_chart(data)
@@ -2576,7 +2761,7 @@ class DeltaGenerator(object):
             msg.delta.add_rows.name = name
             msg.delta.add_rows.has_name = True
 
-        self._enqueue(msg)
+        _enqueue_message(msg)
 
         return self
 
@@ -2618,3 +2803,27 @@ def _maybe_melt_data_for_add_rows(data, delta_type, last_index):
 
 def _clean_text(text):
     return textwrap.dedent(str(text)).strip()
+
+
+def _value_or_dg(value, dg):
+    """Return value, None or dg.
+
+    Widgets have return values unlike other elements and may want to return
+    `None`. We create a special `NoValue` class for this scenario since `None`
+    return values get replaced with a DeltaGenerator.
+    """
+    if value is framework.NoValue:
+        return None
+    if value is None:
+        return dg
+    return value
+
+
+def _enqueue_message(msg):
+    ctx = get_report_ctx()
+
+    if ctx is None:
+        # XXX Show error?
+        return False
+
+    return ctx.enqueue(msg)
