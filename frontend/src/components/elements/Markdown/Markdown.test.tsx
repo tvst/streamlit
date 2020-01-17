@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018-2019 Streamlit Inc.
+ * Copyright 2018-2020 Streamlit Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ const getProps = (elementProps: object = {}): MarkdownProps => ({
   width: 100,
 })
 
-describe("Markdown Element Test", () => {
+describe("Markdown element", () => {
   it("renders markdown as expected", () => {
     const props = getProps()
     const wrap = shallow(<Markdown {...props} />)

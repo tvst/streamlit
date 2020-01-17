@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018-2019 Streamlit Inc.
+ * Copyright 2018-2020 Streamlit Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +28,13 @@ const getProps = (elementProps: object = {}): Props => ({
   width: 100,
 })
 
-it("renders preformatted text as expected", () => {
-  const props = getProps()
-  const wrap = shallow(<Text {...props} />)
-  expect(wrap).toBeDefined()
-  const elem = wrap.get(0)
-  expect(wrap.text()).toBe("some plain text")
-  expect(elem.props.className.includes("stText")).toBeTruthy()
+describe("Text element", () => {
+  it("renders preformatted text as expected", () => {
+    const props = getProps()
+    const wrap = shallow(<Text {...props} />)
+    expect(wrap).toBeDefined()
+    const elem = wrap.get(0)
+    expect(wrap.text()).toBe("some plain text")
+    expect(elem.props.className.includes("stText")).toBeTruthy()
+  })
 })

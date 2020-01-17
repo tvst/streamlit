@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2018-2019 Streamlit Inc.
+# Copyright 2018-2020 Streamlit Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ from streamlit.compatibility import setup_2_3_shims
 setup_2_3_shims(globals())
 
 import os
-import platform
 import toml
 import collections
+import urllib
 
 import click
 from blinker import Signal
@@ -38,7 +38,6 @@ from streamlit.ConfigOption import ConfigOption
 from streamlit.logger import get_logger
 
 LOGGER = get_logger(__name__)
-
 
 # Config System Global State #
 
@@ -190,7 +189,6 @@ def _delete_option(key):
 
 _create_section("global", "Global options that apply across all of Streamlit.")
 
-
 _create_option(
     "global.disableWatchdogWarning",
     description="""
@@ -214,10 +212,12 @@ _create_option(
         - "off" : turn off sharing.
         - "s3" : share to S3, based on the settings under the [s3] section of
           this config file.
+        - "file" : share to a directory on the local machine. This is
+          meaningful only for debugging Streamlit itself, and shouldn't be
+          used for production.
         """,
     default_val="off",
 )
-
 
 _create_option(
     "global.showWarningOnDirectExecution",
@@ -274,7 +274,6 @@ _create_option(
     type_=bool,
 )
 
-
 _create_option(
     "global.metrics",
     description="Whether to serve prometheus metrics from /metrics.",
@@ -283,6 +282,13 @@ _create_option(
     type_=bool,
 )
 
+_create_option(
+    "global.suppressDeprecationWarnings",
+    description="Hide deprecation warnings in the streamlit app.",
+    visibility="hidden",
+    default_val=False,
+    type_=bool,
+)
 
 _create_option(
     "global.minCachedMessageSize",
@@ -293,7 +299,6 @@ _create_option(
     type_=int,
 )  # 10k
 
-
 _create_option(
     "global.maxCachedMessageAge",
     description="""Expire cached ForwardMsgs whose age is greater than this
@@ -303,7 +308,6 @@ _create_option(
     default_val=2,
     type_=int,
 )
-
 
 # Config Section: Client #
 
@@ -325,7 +329,6 @@ _create_option(
     type_=bool,
     scriptable=True,
 )
-
 
 # Config Section: Runner #
 
@@ -365,7 +368,6 @@ _create_option(
 # Config Section: Server #
 
 _create_section("server", "Settings for the Streamlit server")
-
 
 _create_option(
     "server.folderWatchBlacklist",
@@ -464,6 +466,15 @@ def _server_enable_cors():
     return True
 
 
+@_create_option("server.maxUploadSize", type_=int)
+def _server_max_upload_size():
+    """Max size, in megabytes, for files uploaded with the file_uploader.
+
+    Default: '50'
+    """
+    return 50
+
+
 # Config Section: Browser #
 
 _create_section("browser", "Configuration of browser front-end.")
@@ -471,8 +482,13 @@ _create_section("browser", "Configuration of browser front-end.")
 
 @_create_option("browser.serverAddress")
 def _browser_server_address():
-    """Internet address of the server server that the browser should connect
-    to. Can be IP address or DNS name.
+    """Internet address where users should point their browsers in order to
+    connect to the app. Can be IP address or DNS name and path.
+
+    This doesn't have much of an effect. This is only used in order to:
+    - Show the URL on the terminal
+    - Open the browser
+    - Tell the browser where to connect to the server when in liveSave mode.
 
     Default: 'localhost'
     """
@@ -490,12 +506,34 @@ def _gather_usage_stats():
 
 @_create_option("browser.serverPort", type_=int)
 def _browser_server_port():
-    """Port that the browser should use to connect to the server when in
-    liveSave mode.
+    """Port where users should point their browsers in order to connect to the
+    app.
+
+    This doesn't have much of an effect. This is only used in order to:
+    - Show the URL on the terminal
+    - Open the browser
+    - Tell the browser where to connect to the server when in liveSave mode.
 
     Default: whatever value is set in server.port.
     """
     return get_option("server.port")
+
+
+# Config Section: Mapbox #
+
+_create_section("mapbox", "Mapbox configuration that is being used by DeckGL.")
+
+_create_option(
+    "mapbox.token",
+    description="""Configure Streamlit to use a custom Mapbox
+                token for elements like st.deck_gl_chart and st.map. If you
+                don't do this you'll be using Streamlit's own token,
+                which has limitations and is not guaranteed to always work.
+                To get a token for yourself, create an account at
+                https://mapbox.com. It's free! (for moderate usage levels)""",
+    default_val="pk.eyJ1IjoidGhpYWdvdCIsImEiOiJjamh3bm85NnkwMng4M3"
+    "dydnNveWwzeWNzIn0.vCBDzNsEF2uFSFk2AM0WZQ",
+)
 
 
 # Config Section: S3 #
@@ -521,7 +559,7 @@ def _s3_url():
     return None
 
 
-@_create_option("s3.accessKeyId", visibility="obfuscated")
+@_create_option("s3.accessKeyId")
 def _s3_access_key_id():
     """Access key to write to the S3 bucket.
 
@@ -532,7 +570,7 @@ def _s3_access_key_id():
     return None
 
 
-@_create_option("s3.secretAccessKey", visibility="obfuscated")
+@_create_option("s3.secretAccessKey")
 def _s3_secret_access_key():
     """Secret access key to write to the S3 bucket.
 
@@ -542,16 +580,6 @@ def _s3_secret_access_key():
     """
     return None
 
-
-_create_option(
-    "s3.requireLoginToView",
-    description="""Make the shared app visible only to users who have been
-        granted view permission. If you are interested in this option, contact
-        us at support@streamlit.io.
-        """,
-    default_val=False,
-    type_=bool,
-)
 
 _create_option(
     "s3.keyPrefix",
@@ -725,11 +753,8 @@ def show_config():
 
             toml_setting = toml.dumps({key: option.value})
 
-            if len(toml_setting) == 0 or option.visibility == "obfuscated":
+            if len(toml_setting) == 0:
                 toml_setting = "#%s =\n" % key
-
-            elif option.visibility == "obfuscated":
-                toml_setting = "%s = (value hidden)\n" % key
 
             append_setting(toml_setting)
 
@@ -827,11 +852,11 @@ def _maybe_convert_to_number(v):
     return v
 
 
-def parse_config_file():
+def parse_config_file(force=False):
     """Parse the config file and update config parameters."""
     global _config_file_has_been_parsed
 
-    if _config_file_has_been_parsed:
+    if _config_file_has_been_parsed and force == False:
         return
 
     # Read ~/.streamlit/config.toml, and then overlay
@@ -898,6 +923,32 @@ def _check_conflicts():
         assert both_are_set or both_are_unset, (
             "In config.toml, s3.accessKeyId and s3.secretAccessKey must "
             "either both be set or both be unset."
+        )
+
+        if is_manually_set("s3.url"):
+            # If s3.url is set, ensure that it's an absolute URL.
+            # An absolute URL starts with either `scheme://` or `//` --
+            # if the configured URL does not start with either prefix,
+            # prepend it with `//` to make it absolute. (If we don't do this,
+            # and the user enters something like `url=myhost.com/reports`, the
+            # browser will assume this is a relative URL, and will prepend
+            # the hostname of the Streamlit instance to the configured URL.)
+            s3_url = get_option("s3.url")
+            parsed = urllib.parse.urlparse(s3_url)
+            if parsed.netloc == "":
+                _set_option("s3.url", "//" + s3_url, get_where_defined("s3.url"))
+
+    elif get_option("global.sharingMode") == "file" and not get_option(
+        "global.developmentMode"
+    ):
+        # Warn users that "sharingMode=file" probably isn't what they meant
+        # to do.
+        LOGGER.warning(
+            "'sharingMode' is set to 'file', but Streamlit is not configured "
+            "for development. This sharingMode is used for debugging "
+            "Streamlit itself, and is not supported for other use-cases. "
+            "\n\nTo remove this warning, set the 'sharingMode' option to "
+            "another value, or remove it from your Streamlit config."
         )
 
 

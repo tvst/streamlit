@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2018-2019 Streamlit Inc.
+# Copyright 2018-2020 Streamlit Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -62,3 +62,14 @@ class UtilTest(unittest.TestCase):
                     util.open_browser("http://some-url")
                     self.assertEqual(True, webbrowser_open.called)
                     self.assertEqual(False, subprocess_popen.called)
+
+    def test_functools_wraps(self):
+        """Test wrap for functools.wraps"""
+
+        import streamlit as st
+
+        @st.cache
+        def f():
+            return True
+
+        self.assertEqual(True, hasattr(f, "__wrapped__"))

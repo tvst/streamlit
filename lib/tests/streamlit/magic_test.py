@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2018-2019 Streamlit Inc.
+# Copyright 2018-2020 Streamlit Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -173,3 +173,12 @@ async def myfunc(a):
         a
 """
         self._testCode(CODE_ASYNC_FOR, 1)
+
+    def test_docstring_is_ignored(self):
+        """Test that docstrings don't print in the app"""
+        CODE = """
+def myfunc(a):
+    '''This is the docstring'''
+    return 42
+"""
+        self._testCode(CODE, 0)

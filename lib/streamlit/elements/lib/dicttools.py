@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2018-2019 Streamlit Inc.
+# Copyright 2018-2020 Streamlit Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -122,11 +122,17 @@ def unflatten(flat_dict, encodings=None):
 
     for k, v in list(out_dict.items()):
         # Unflatten child dicts:
-        if type(v) in (dict, native_dict): # noqa: F821 pylint:disable=undefined-variable
+        if type(v) in (
+            dict,
+            native_dict,
+        ):  # noqa: F821 pylint:disable=undefined-variable
             v = unflatten(v, encodings)
         elif hasattr(v, "__iter__"):
             for i, child in enumerate(v):
-                if type(child) in (dict, native_dict): # noqa: F821 pylint:disable=undefined-variable
+                if type(child) in (
+                    dict,
+                    native_dict,
+                ):  # noqa: F821 pylint:disable=undefined-variable
                     v[i] = unflatten(child, encodings)
 
         # Move items into 'encoding' if needed:

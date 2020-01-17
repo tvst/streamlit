@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018-2019 Streamlit Inc.
+ * Copyright 2018-2020 Streamlit Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,13 @@
  */
 
 export interface Args {
-  streamlitVersion: string
-  pythonVersion: string
-  installationId: string
-  authorEmail: string
-  maxCachedMessageAge: number
-  commandLine: string
+  streamlitVersion?: string | null
+  pythonVersion?: string | null
+  installationId?: string | null
+  authorEmail?: string | null
+  maxCachedMessageAge?: number | null
+  commandLine?: string | null
+  mapboxToken?: string | null
 }
 
 export class SessionInfo {
@@ -32,6 +33,7 @@ export class SessionInfo {
   public readonly authorEmail: string
   public readonly maxCachedMessageAge: number
   public readonly commandLine: string
+  public readonly mapboxToken: string
 
   /**
    * Singleton SessionInfo object. The reasons we're using a singleton here
@@ -64,12 +66,26 @@ export class SessionInfo {
     authorEmail,
     maxCachedMessageAge,
     commandLine,
+    mapboxToken,
   }: Args) {
+    if (
+      streamlitVersion == null ||
+      pythonVersion == null ||
+      installationId == null ||
+      authorEmail == null ||
+      maxCachedMessageAge == null ||
+      commandLine == null ||
+      mapboxToken == null
+    ) {
+      throw new Error("SessionInfo arguments must be strings")
+    }
+
     this.streamlitVersion = streamlitVersion
     this.pythonVersion = pythonVersion
     this.installationId = installationId
     this.authorEmail = authorEmail
     this.maxCachedMessageAge = maxCachedMessageAge
     this.commandLine = commandLine
+    this.mapboxToken = mapboxToken
   }
 }

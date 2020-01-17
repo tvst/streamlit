@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018-2019 Streamlit Inc.
+ * Copyright 2018-2020 Streamlit Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,18 +31,19 @@ const getProps = (elementProps: object = {}): Props => ({
   width: 100,
 })
 
-describe("JSON Element Test", () => {
+describe("JSON element", () => {
   it("renders json as expected", () => {
     const props = getProps()
     const wrapper = shallow(<Json {...props} />)
     expect(wrapper).toBeDefined()
     const elem = wrapper.get(0)
     expect(elem.props.className.includes("stJson")).toBeTruthy()
-  }),
-    it("should raise an exception with invalid JSON", () => {
-      const props = getProps({ body: "invalid JSON" })
-      expect(() => {
-        shallow(<Json {...props} />)
-      }).toThrow(SyntaxError)
-    })
+  })
+
+  it("should raise an exception with invalid JSON", () => {
+    const props = getProps({ body: "invalid JSON" })
+    expect(() => {
+      shallow(<Json {...props} />)
+    }).toThrow(SyntaxError)
+  })
 })

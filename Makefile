@@ -14,25 +14,25 @@ help:
 
 .PHONY: all
 # Get dependencies, build frontend, install Streamlit into Python environment.
-all: init install build develop
+all: init frontend install
 
 .PHONY: all-devel
 # Get dependencies and install Streamlit into Python environment -- but do not build the frontend.
-all-devel: init install develop
+all-devel: init develop
 	@echo ""
 	@echo "    The frontend has *not* been rebuilt."
 	@echo "    If you need to make a wheel file or test S3 sharing, run:"
 	@echo ""
-	@echo "    make build"
+	@echo "    make frontend"
 	@echo ""
 
 .PHONY: init
 # Install Python and JS dependencies.
 init: setup pipenv-install react-init scssvars protobuf # react-build release
 
-.PHONY: build
+.PHONY: frontend
 # Build frontend into static files.
-build: react-build
+frontend: react-build
 
 .PHONY: setup
 setup:
@@ -148,13 +148,15 @@ clean: clean-docs
 	find . -name '*.pyc' -type f -delete || true
 	find . -name __pycache__ -type d -delete || true
 	find . -name .pytest_cache -exec rm -rfv {} \; || true
-	cd frontend; rm -rf build node_modules
 	rm -f lib/streamlit/proto/*_pb2.py
+	rm -rf lib/streamlit/static
+	rm -f lib/Pipfile.lock
+	rm -rf frontend/build
+	rm -rf frontend/node_modules
 	rm -f frontend/src/autogen/proto.js
 	rm -f frontend/src/autogen/proto.d.ts
 	rm -f frontend/src/autogen/scssVariables.ts
-	rm -rf lib/streamlit/static
-	rm -f lib/Pipfile.lock
+	rm -rf frontend/public/reports
 	find . -name .streamlit -type d -exec rm -rfv {} \; || true
 	cd lib; rm -rf .coverage .coverage\.*
 
@@ -181,30 +183,21 @@ devel-docs: docs
 publish-docs: docs
 	cd docs/_build; \
 		aws s3 sync \
-				--acl public-read html s3://streamlit.io/docs/ \
-				--profile streamlit
-
-  # For now, continue publishing to secret/docs.
-	# TODO: Remove after 2020-01-01
-	cd docs/_build; \
-		aws s3 sync \
-				--acl public-read html s3://streamlit.io/secret/docs/ \
+				--acl public-read html s3://docs.streamlit.io \
 				--profile streamlit
 
 	# The line below uses the distribution ID obtained with
 	# $ aws cloudfront list-distributions | \
 	#     jq '.DistributionList.Items[] | \
 	#     select(.Aliases.Items[0] | \
-	#     contains("www.streamlit.io")) | \
+	#     contains("docs.streamlit.io")) | \
 	#     .Id'
 
 	aws cloudfront create-invalidation \
-		--distribution-id=E5G9JPT7IOJDV \
+		--distribution-id=E16K3UXOWYZ8U7 \
 		--paths \
-			'/docs/*' \
-			'/docs/tutorial/*' \
-			'/secret/docs/*' \
-			'/secret/docs/tutorial/*' \
+			'/*' \
+			'/tutorial/*' \
 		--profile streamlit
 
 .PHONY: protobuf

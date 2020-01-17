@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2018-2019 Streamlit Inc.
+# Copyright 2018-2020 Streamlit Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,7 +34,9 @@ from streamlit import version
 import streamlit.bootstrap as bootstrap
 from streamlit.case_converters import to_snake_case
 
-LOG_LEVELS = ["error", "warning", "info", "debug"]
+ACCEPTED_FILE_EXTENSIONS = ("py", "py3")
+
+LOG_LEVELS = ("error", "warning", "info", "debug")
 
 NEW_VERSION_TEXT = """
   %(new_version)s
@@ -171,7 +173,7 @@ def main_docs():
     print("Showing help page in browser...")
     from streamlit import util
 
-    util.open_browser("https://streamlit.io/docs")
+    util.open_browser("https://docs.streamlit.io")
 
 
 @main.command("hello")
@@ -206,6 +208,13 @@ def main_run(target, args=None, **kwargs):
     from validators import url
 
     _apply_config_options_from_cli(kwargs)
+
+    _, extension = os.path.splitext(target)
+    if extension[1:] not in ACCEPTED_FILE_EXTENSIONS:
+        raise click.BadArgumentUsage(
+            "Streamlit requires raw Python (.py) files, not %s.\nFor more information, please see https://docs.streamlit.io"
+            % extension
+        )
 
     if url(target):
         from streamlit.temporary_directory import TemporaryDirectory

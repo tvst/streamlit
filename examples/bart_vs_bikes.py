@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2018-2019 Streamlit Inc.
+# Copyright 2018-2020 Streamlit Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,12 @@
 # limitations under the License.
 
 import copy
-from urllib.parse import urljoin
+import os
 import pandas as pd
+import pydeck as pdk
 import streamlit as st
 
+default_color = [200, 30, 0, 160]
 
 st.title("BART stops vs. bike rentals")
 
@@ -33,10 +35,8 @@ st.write(
 
 @st.cache
 def from_data_file(filename):
-    dirname = (
-        "https://raw.githubusercontent.com/streamlit/streamlit/develop/examples/data/"
-    )
-    url = urljoin(dirname, filename)
+    dirname = "https://raw.githubusercontent.com/streamlit/streamlit/develop/examples/"
+    url = os.path.join(dirname, "data", filename)
     return pd.read_json(url)
 
 
@@ -51,42 +51,61 @@ bart_stop_names = bart_stop_stats["name"]
 bart_stop_stats.drop(labels=["name"], axis=1, inplace=True)
 bart_stop_stats.insert(0, "name", bart_stop_names)
 
-st.deck_gl_chart(
-    viewport={"latitude": 37.76, "longitude": -122.4, "zoom": 11, "pitch": 50},
-    layers=[
-        {
-            # Plot number of bike rentals throughtout the city
-            "type": "HexagonLayer",
-            "data": bike_rental_stats,
-            "radius": 200,
-            "elevationScale": 4,
-            "elevationRange": [0, 1000],
-            "pickable": True,
-            "extruded": True,
-        },
-        {
-            # Now plot locations of Bart stops
-            # ...and let's size the stops according to traffic
-            "type": "ScatterplotLayer",
-            "data": bart_stop_stats,
-            "radiusScale": 10,
-            "getRadius": 50,
-        },
-        {
-            # Now Add names of Bart stops
-            "type": "TextLayer",
-            "data": bart_stop_stats,
-            "getText": "name",
-            "getColor": [0, 0, 0, 200],
-            "getSize": 15,
-        },
-        {
-            # And draw some arcs connecting the stops
-            "type": "ArcLayer",
-            "data": bart_path_stats,
-            "pickable": True,
-            "autoHighlight": True,
-            "getStrokeWidth": 10,
-        },
-    ],
+# Set the map style
+map_style = ("mapbox://styles/mapbox/light-v10",)
+
+# Set the viewport location
+view_state = pdk.ViewState(longitude=-122.4, latitude=37.76, zoom=11, pitch=50)
+
+# Plot number of bike rentals throughtout the city
+hexagon_layer = pdk.Layer(
+    type="HexagonLayer",
+    data=bike_rental_stats,
+    get_position="[lon, lat]",
+    radius=200,
+    elevation_scale=4,
+    elevation_range=[0, 1000],
+    pickable=True,
+    extruded=True,
 )
+
+# Now plot locations of Bart stops
+# ...and let's size the stops according to traffic
+scatterplot_layer = pdk.Layer(
+    type="ScatterplotLayer",
+    data=bart_stop_stats,
+    get_position="[lon, lat]",
+    radius_scale=10,
+    get_radius=50,
+    get_fill_color=default_color,
+)
+
+# Now Add names of Bart stops
+text_layer = pdk.Layer(
+    type="TextLayer",
+    data=bart_stop_stats,
+    get_position="[lon, lat]",
+    get_text="name",
+    get_size=15,
+)
+
+# And draw some arcs connecting the stops
+arc_layer = pdk.Layer(
+    type="ArcLayer",
+    data=bart_path_stats,
+    pickable=True,
+    auto_highlight=True,
+    get_width=10,
+    get_source_position="[lon, lat]",
+    get_target_position="[lon2, lat2]",
+    get_target_color=default_color,
+    get_source_color=default_color,
+)
+
+# Combined all of it
+pydeck_obj = pdk.Deck(
+    initial_view_state=view_state,
+    layers=[hexagon_layer, scatterplot_layer, text_layer, arc_layer],
+    map_style=map_style,
+)
+st.write(pydeck_obj)

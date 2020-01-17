@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018-2019 Streamlit Inc.
+ * Copyright 2018-2020 Streamlit Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,16 @@ import ReactDOM from "react-dom"
 import { Map as ImmutableMap } from "immutable"
 import BokehChart from "./BokehChart"
 
-it("renders without crashing", () => {
-  const mountPoint = document.createElement("div")
-  const props = {
-    element: ImmutableMap({ figure: null }),
-    index: 0,
-    width: 0,
-    height: undefined,
-  }
-  ReactDOM.render(<BokehChart {...props} />, mountPoint)
-  ReactDOM.unmountComponentAtNode(mountPoint)
+describe("BokehChart element", () => {
+  it("renders without crashing", () => {
+    const mountPoint = document.createElement("div")
+    const props = {
+      element: ImmutableMap({ figure: null }),
+      index: 0,
+      width: 0,
+      height: undefined,
+    }
+    ReactDOM.render(<BokehChart {...props} />, mountPoint)
+    ReactDOM.unmountComponentAtNode(mountPoint)
+  })
 })

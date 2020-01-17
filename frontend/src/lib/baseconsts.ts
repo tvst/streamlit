@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018-2019 Streamlit Inc.
+ * Copyright 2018-2020 Streamlit Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,17 +49,6 @@ export const FETCH_PARAMS: RequestInit = {
   credentials: "same-origin",
   mode: "cors",
 }
-
-/**
- * Region of our AWS S3 bucket.
- */
-export const AWS_REGION = "us-west-2"
-
-/**
- * Pool ID for Cognito credentials.
- */
-export const COGNITO_IDENTITY_POOL_ID =
-  "us-west-2:9f2fd5d3-79e5-44be-830a-137fef3c2a06"
 
 /**
  * Feature flag for https://github.com/streamlit/streamlit/issues/678.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright 2018-2019 Streamlit Inc.
+# Copyright 2018-2020 Streamlit Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ except ImportError:
 
 # magic.py uses the async keyword, which is Python 3.6+
 if IS_PYTHON_2:
-    EXCLUDED_FILENAMES.add("magic.py")
+    EXCLUDED_FILENAMES.add("st_magic.py")
 
 # DEVNULL support
 try:

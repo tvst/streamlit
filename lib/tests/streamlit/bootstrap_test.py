@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2018-2019 Streamlit Inc.
+# Copyright 2018-2020 Streamlit Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,21 +47,21 @@ class BootstrapTest(unittest.TestCase):
         for platform, do_fix in [("darwin", True), ("linux2", True)]:
             sys.platform = platform
 
-            matplotlib.use("tkagg")
+            matplotlib.use("pdf", force=True)
 
             config._set_option("runner.fixMatplotlib", True, "test")
             bootstrap.run("/not/a/script", "", [])
             if do_fix:
                 self.assertEqual("agg", matplotlib.get_backend().lower())
             else:
-                self.assertEqual("tkagg", matplotlib.get_backend().lower())
+                self.assertEqual("pdf", matplotlib.get_backend().lower())
 
             # Reset
-            matplotlib.use("tkagg")
+            matplotlib.use("pdf", force=True)
 
             config._set_option("runner.fixMatplotlib", False, "test")
             bootstrap.run("/not/a/script", "", [])
-            self.assertEqual("tkagg", matplotlib.get_backend().lower())
+            self.assertEqual("pdf", matplotlib.get_backend().lower())
 
         sys.platform = ORIG_PLATFORM
 

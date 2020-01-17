@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2018-2019 Streamlit Inc.
+# Copyright 2018-2020 Streamlit Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ Or try running our "Hello World":
 
     $ streamlit hello
 
-For more detailed info, see https://streamlit.io/docs.
+For more detailed info, see https://docs.streamlit.io.
 """
 
 # IMPORTANT: Prefix with an underscore anything that the user shouldn't see.
@@ -109,6 +109,7 @@ import traceback as _traceback
 import json as _json
 import numpy as _np
 
+from streamlit.util import functools_wraps as _functools_wraps
 from streamlit import code_util as _code_util
 from streamlit import env_util as _env_util
 from streamlit import string_util as _string_util
@@ -173,9 +174,11 @@ code = _with_dg(_DeltaGenerator.code)  # noqa: E221
 dataframe = _with_dg(_DeltaGenerator.dataframe)  # noqa: E221
 date_input = _with_dg(_DeltaGenerator.date_input)  # noqa: E221
 deck_gl_chart = _with_dg(_DeltaGenerator.deck_gl_chart)  # noqa: E221
+pydeck_chart = _with_dg(_DeltaGenerator.pydeck_chart)  # noqa: E221
 empty = _with_dg(_DeltaGenerator.empty)  # noqa: E221
 error = _with_dg(_DeltaGenerator.error)  # noqa: E221
 exception = _with_dg(_DeltaGenerator.exception)  # noqa: E221
+file_uploader = _with_dg(_DeltaGenerator.file_uploader)  # noqa: E221
 graphviz_chart = _with_dg(_DeltaGenerator.graphviz_chart)  # noqa: E221
 header = _with_dg(_DeltaGenerator.header)  # noqa: E221
 help = _with_dg(_DeltaGenerator.help)  # noqa: E221
@@ -397,7 +400,9 @@ def echo():
             lines_to_display.extend(source_lines[start_line:end_line])
             initial_spaces = _SPACES_RE.match(lines_to_display[0]).end()
             for line in source_lines[end_line:]:
-                if _SPACES_RE.match(line).end() < initial_spaces:
+                indentation = _SPACES_RE.match(line).end()
+                # The != 1 is because we want to allow '\n' between sections.
+                if indentation != 1 and indentation < initial_spaces:
                     break
                 lines_to_display.append(line)
         lines_to_display = _textwrap.dedent("".join(lines_to_display))

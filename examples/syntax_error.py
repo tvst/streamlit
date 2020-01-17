@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2018-2019 Streamlit Inc.
+# Copyright 2018-2020 Streamlit Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 import streamlit as st
 import sys
 
-# Uncomment this as a block.
-# This tests that errors before the first st call get caught.
-def foo():
-    # EXPECTED: inline exception
-    a = not_a_real_variable  # noqa: F821 pylint:disable=undefined-variable,unused-variable 
+# # Uncomment this as a block.
+# # This tests that errors before the first st call get caught.
+# def foo():
+#     # EXPECTED: inline exception
+#     a = not_a_real_variable  # noqa: F821 pylint:disable=undefined-variable,unused-variable
 
-foo()
+# foo()
 
 # # Uncomment this as a block.
 # # This tests that errors before the first st call get caught.

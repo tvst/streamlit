@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright 2018-2019 Streamlit Inc.
+# Copyright 2018-2020 Streamlit Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # there.
 PYTHON = {
     "lib/setup.py": r"(?P<pre>.*version=\").*(?P<post>\",  # PEP-440$)",
-    "docs/troubleshooting.md": r"(?P<pre>.*number printed is `).*(?P<post>`.$)",
+    "docs/troubleshooting/common-issues.md": r"(?P<pre>.*number printed is `).*(?P<post>`.$)",
 }
 
 NODE = {"frontend/package.json": r'(?P<pre>^  "version": ").*(?P<post>",$)'}

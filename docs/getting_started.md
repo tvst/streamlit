@@ -36,12 +36,24 @@ concepts](main_concepts.md) to understand Streamlit's data flow model.
 
 Regardless of which package management tool you're using, we recommend running
 these commands in a virtual environment. This ensures that the dependencies
-pulled in for Streamlit don't impact any other your other Python projects
+pulled in for Streamlit don't impact any other Python projects
 you're working on.
 
 - [virtualenv](https://virtualenv.pypa.io/en/latest/)
 - [venv](https://docs.python.org/3/library/venv.html)
 - [pipenv](https://docs.pipenv.org/en/latest/)
+
+## Install Streamlit
+
+```bash
+$ pip install streamlit
+```
+
+Now run the hello world app just to make sure everything it's working:
+
+```bash
+$ streamlit hello
+```
 
 ## Import Streamlit
 
@@ -248,7 +260,7 @@ assured, though, we're currently working on adding support for those too!
 ## Show progress
 
 When adding long running computations to an app, you can use
-[`st.progess()`](api.html#streamlit.progress) to display status in real time.
+[`st.progress()`](api.html#streamlit.progress) to display status in real time.
 
 First, let's import time. We're going to use the `time.sleep()` method to
 simulate a long running computation:

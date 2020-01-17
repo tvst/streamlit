@@ -22,6 +22,100 @@ See highlights, bug fixes, and known issues for Streamlit releases:
       $ pip install --upgrade streamlit
 ```
 
+## Version 0.53.0
+
+_Release date: January 14, 2019_
+
+**Highlights:**
+
+- 🗺️ Support for all DeckGL features! Just use
+  [Pydeck](https://deckgl.readthedocs.io/en/latest/) instead of
+  [`st.deck_gl_chart`](https://docs.streamlit.io/api.html#streamlit.pydeck_chart).
+  To do that, simply pass a PyDeck object to
+  [`st.pydeck_chart`](https://docs.streamlit.io/api.html#streamlit.pydeck_chart),
+  [`st.write`](https://docs.streamlit.io/api.html#streamlit.write),
+  or [magic](https://docs.streamlit.io/api.html#magic).
+
+  _Note that as a **preview release** things may change in the near future.
+  Looking forward to hearing input from the community before we stabilize the
+  API!_
+
+  **The goals is for this to replace `st.deck_gl_chart`,** since it
+  is does everything the old API did _and much more!_
+
+- 🆕 Better handling of Streamlit upgrades while developing. We now auto-reload
+  the browser tab if the app it is displaying uses a newer version of Streamlit
+  than the one the tab is running.
+
+- 👑 New favicon, with our new logo!
+
+**Notable fixes:**
+
+- Magic now works correctly in Python 3.8. It no longer causes
+  docstrings to render in your app.
+
+**Breaking changes:**
+
+- Updated how we calculate the default width and height of all chart types.
+  We now leave chart sizing up to your charting library itself, so please refer
+  to the library's documentation.
+
+  As a result, the `width` and `height` arguments have been deprecated
+  from most chart commands, and `use_container_width` has been introduced
+  everywhere to allow you to make charts fill as much horizontal space as
+  possible (this used to be the default).
+
+## Version 0.52.0
+
+_Release date: December 20, 2019_
+
+**Highlights:**
+
+- 📤 Preview release of the file uploader widget. To try it out just call
+  [`st.file_uploader`](https://docs.streamlit.io/api.html#streamlit.file_uploader)!
+
+  _Note that as a **preview release** things may change in the near future.
+  Looking forward to hearing input from the community before we stabilize the
+  API!_
+
+- 👋 Support for [emoji codes](https://www.webfx.com/tools/emoji-cheat-sheet/) in
+  `st.write` and `st.markdown`! Try it out with `st.write("Hello :wave:")`.
+
+**Breaking changes:**
+
+- 🧹 `st.pyplot` now clears figures by default, since that's what you want 99% of
+  the time. This allows you to create two or more Matplotlib charts without
+  having to call
+  [`pyplot.clf`](https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.pyplot.clf.html)
+  every time. If you want to turn this behavior off, use
+  [`st.pyplot(clear_figure=False)`](https://docs.streamlit.io/api.html#streamlit.pyplot)
+- 📣 `st.cache` no longer checks for input mutations. This is the first change
+  of our ongoing effort to simplify the caching system and prepare Streamlit
+  for the launch of other caching primitives like Session State!
+
+## Version 0.51.0
+
+_Release date: November 30, 2019_
+
+**Highlights:**
+
+- 🐕 You can now tweak the behavior of the file watcher with the config option `server.fileWatcherType`. Use it to switch between:
+  - `auto` (default) : Streamlit will attempt to use the watchdog module, and
+    falls back to polling if watchdog is not available.
+  - `watchdog` : Force Streamlit to use the watchdog module.
+  - `poll` : Force Streamlit to always use polling.
+  - `none` : Streamlit will not watch files.
+
+**Notable bug fixes:**
+
+- Fix the "keyPrefix" option in static report sharing [#724](https://github.com/streamlit/streamlit/pull/724)
+- Add support for getColorX and getTargetColorX to DeckGL Chart [#718](https://github.com/streamlit/streamlit/pull/718)
+- Fixing Tornado on Windows + Python 3.8 [#682](https://github.com/streamlit/streamlit/pull/682)
+- Fall back on webbrowser if xdg-open is not installed on Linux [#701](https://github.com/streamlit/streamlit/pull/701)
+- Fixing number input spin buttons for Firefox [#683](https://github.com/streamlit/streamlit/pull/683)
+- Fixing CTRL+ENTER on Windows [#699](https://github.com/streamlit/streamlit/pull/699)
+- Do not automatically create credential file when in headless mode [#467](https://github.com/streamlit/streamlit/pull/467)
+
 ## Version 0.50.1
 
 _Release date: November 10, 2019_
@@ -106,7 +200,7 @@ _Release date: September 19, 2019_
 **Highlights:**
 
 - ✨ Magic commands! Use `st.write` without typing `st.write`. See
-  https://streamlit.io/docs/api.html#magic-commands
+  https://docs.streamlit.io/api.html#magic-commands
 - 🎛️ New `st.multiselect` widget.
 - 🐍 Fixed numerous install issues so now you can use `pip install streamlit`
   even in Conda! We've therefore deactivated our Conda repo.

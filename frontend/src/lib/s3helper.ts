@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2018-2019 Streamlit Inc.
+ * Copyright 2018-2020 Streamlit Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,99 +15,56 @@
  * limitations under the License.
  */
 
-import AWS from "aws-sdk/global"
-import S3 from "aws-sdk/clients/s3"
-import {
-  FETCH_PARAMS,
-  AWS_REGION,
-  COGNITO_IDENTITY_POOL_ID,
-} from "./baseconsts"
-import { logError } from "./log"
+import { FETCH_PARAMS } from "./baseconsts"
 import url from "url"
 
-let s3: any = null
-let haveCredentials = false
-
 /**
- * Parses the S3 data bucket name and the resource root for the current
- * report from the window location href.
+ * Returns the local path for a static report resource.
+ * @param reportId the report ID of the resource to fetch
+ * @param objName the name of the resource to fetch
  */
-export function getBucketAndResourceRoot(): {
-  bucket: string
-  resourceRoot: string
-} {
-  const { hostname, pathname } = url.parse(window.location.href, true)
+export function getReportObjectPath(
+  reportId: string,
+  objName: string
+): string {
+  const { pathname } = url.parse(window.location.href, true)
 
-  // Bucket name is always equal to the hostname
-  const bucket = String(hostname)
+  let resourceRoot = ""
+  if (pathname != null) {
+    // If we have a pathname, it will look like either
+    // 1) /some/s3/path/0.49.0-HdbX/index.html?id=1234 OR
+    // 2) /index.html?id=1234
+    // We want everything after the leading '/', and before the final '/'.
 
-  // We may not have a pathname
-  if (pathname == null || pathname === "/") {
-    return { bucket, resourceRoot: "" }
+    // Strip the trailing "/" and everything after it
+    resourceRoot = pathname.substring(0, pathname.lastIndexOf("/"))
+
+    // Strip the leading slash, if it exists
+    if (resourceRoot.startsWith("/")) {
+      resourceRoot = resourceRoot.substring(1)
+    }
   }
 
-  // Our pathname will look something like /some/s3/path/0.49.0-HdbX/index.html?id=9zttR9BsCpG6YP1fMD8rjj
-  // Everything after that initial '/ and before the final '/' is the resource root.
-  const startIdx = pathname.startsWith("/") ? 1 : 0
-  const endIdx = pathname.lastIndexOf("/")
-  const resourceRoot = pathname.substring(startIdx, endIdx)
-
-  return { bucket, resourceRoot }
+  const objectPath = `reports/${reportId}/${objName}`
+  return resourceRoot === ""
+    ? `/${objectPath}`
+    : `/${resourceRoot}/${objectPath}`
 }
 
 /**
- * Set up AWS credentials, given an OAuth ID token from Google.
- * Only needs to be called once ever.
+ * Fetch a static report resource from S3. Error if it doesn't exist.
+ *
+ * @param reportId the report ID of the resource to fetch
+ * @param objName the name of the resource to fetch
  */
-export async function configureCredentials(idToken: string): Promise<void> {
-  if (haveCredentials) {
-    logError("Grabbing credentials again. This should never happen.")
-  }
-
-  AWS.config.region = AWS_REGION
-
-  AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-    // These keys are capitalized funnily on purpose. That's the actual API.
-    IdentityPoolId: COGNITO_IDENTITY_POOL_ID,
-    Logins: {
-      "accounts.google.com": idToken,
-    },
-  })
-
-  if ("getPromise" in AWS.config.credentials) {
-    await AWS.config.credentials.getPromise()
-  }
-  haveCredentials = true
-}
-
-/**
- * Get an Object from S3. This smartly chooses whether hit the HTTP server in
- * front of S3 or whether to hit the S3 API server based.
- *
- * The reason why you'd want to do this is to make setup easier for clients who
- * have their own S3 setups but do not want to use auth (maybe because they're
- * in a VPN). This way there's no need for them to mess with things like
- * Cognito, IAM, roles, and so on -- which would be required if using the S3
- * API.
- *
- * So you should *always* use this instead of s3.getObject.
- *
- * Arguments: {Key: string, Bucket: string}
- */
-export async function getObject(
-  args: S3.Types.GetObjectRequest
-): Promise<any> {
-  if (haveCredentials) {
-    return getObjectViaS3API(args)
-  } else {
-    return getObjectViaFetchAPI(args)
-  }
-}
-
-async function getObjectViaFetchAPI(
-  args: S3.Types.GetObjectRequest
+export async function getReportObject(
+  reportId: string,
+  objName: string
 ): Promise<Response> {
-  const response = await fetch(`/${args.Key}`, FETCH_PARAMS)
+  const response = await fetch(
+    getReportObjectPath(reportId, objName),
+    FETCH_PARAMS
+  )
 
   if (!response.ok) {
     if (response.status === 403) {
@@ -123,19 +80,4 @@ async function getObjectViaFetchAPI(
   }
 
   return response
-}
-
-async function getObjectViaS3API(
-  args: S3.Types.GetObjectRequest
-): Promise<any> {
-  if (!s3) {
-    s3 = new S3()
-  }
-
-  const data = await s3.getObject(args).promise()
-  return {
-    json: () => Promise.resolve(JSON.parse(data.Body.toString("utf-8"))),
-    text: () => Promise.resolve(data.Body.toString("utf-8")),
-    arrayBuffer: () => Promise.resolve(data.Body),
-  }
 }

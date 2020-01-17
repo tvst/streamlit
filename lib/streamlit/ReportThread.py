@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2018-2019 Streamlit Inc.
+# Copyright 2018-2020 Streamlit Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ ReportContext = namedtuple(
         # (_WidgetIDSet) The set of widget IDs that have been assigned in the
         # current report run. This set is cleared at the start of each run.
         "widget_ids_this_run",
+        # (UploadedFileManager) Object that manages files uploaded by this user.
+        "uploaded_file_mgr",
     ],
 )
 
@@ -74,9 +76,13 @@ REPORT_CONTEXT_ATTR_NAME = "streamlit_report_ctx"
 class ReportThread(threading.Thread):
     """Extends threading.Thread with a ReportContext member"""
 
-    def __init__(self, enqueue, widgets, target=None, name=None):
+    def __init__(
+        self, enqueue, widgets, target=None, name=None, uploaded_file_mgr=None,
+    ):
         super(ReportThread, self).__init__(target=target, name=name)
-        self.streamlit_report_ctx = ReportContext(enqueue, widgets, _WidgetIDSet())
+        self.streamlit_report_ctx = ReportContext(
+            enqueue, widgets, _WidgetIDSet(), uploaded_file_mgr
+        )
 
 
 def add_report_ctx(thread):

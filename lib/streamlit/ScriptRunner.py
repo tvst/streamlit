@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2018-2019 Streamlit Inc.
+# Copyright 2018-2020 Streamlit Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,7 +48,9 @@ class ScriptRunnerEvent(Enum):
 
 
 class ScriptRunner(object):
-    def __init__(self, report, widget_states, request_queue):
+    def __init__(
+        self, report, widget_states, request_queue, uploaded_file_mgr=None,
+    ):
         """Initialize the ScriptRunner.
 
         (The ScriptRunner won't start executing until start() is called.)
@@ -58,12 +60,6 @@ class ScriptRunner(object):
         report : Report
             The ReportSession's report.
 
-        main_dg : DeltaGenerator
-            The ReportSession's main DeltaGenerator.
-
-        sidebar_dg : DeltaGenerator
-            The ReportSession's sidebar DeltaGenerator.
-
         widget_states : streamlit.proto.Widget_pb2.WidgetStates
             The ReportSession's current widget states
 
@@ -72,9 +68,13 @@ class ScriptRunner(object):
             ScriptRunner will continue running until the queue is empty,
             and then shut down.
 
+        uploaded_file_mgr : UploadedFileManager
+            The File manager to store the data uploaded by the file_uplpader widget.
+
         """
         self._report = report
         self._request_queue = request_queue
+        self._uploaded_file_mgr = uploaded_file_mgr
 
         self._widgets = Widgets()
         self._widgets.set_state(widget_states)
@@ -123,6 +123,7 @@ class ScriptRunner(object):
             widgets=self._widgets,
             target=self._process_request_queue,
             name="ScriptRunner.scriptThread",
+            uploaded_file_mgr=self._uploaded_file_mgr,
         )
         self._script_thread.start()
 

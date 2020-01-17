@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2018-2019 Streamlit Inc.
+# Copyright 2018-2020 Streamlit Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ class S3Storage(AbstractStorage):
         log.propagate = False
 
         assert (
-            config.get_option("global.sharingMode") != "off"
+            config.get_option("global.sharingMode") == "s3"
         ), 'Sharing is disabled. See "global.sharingMode".'
 
         self._bucketname = config.get_option("s3.bucket")
@@ -198,21 +198,16 @@ class S3Storage(AbstractStorage):
 
     @gen.coroutine
     def _s3_upload_files(self, files, progress_coroutine):
-        set_private_acl = config.get_option("s3.requireLoginToView")
         for i, (path, data) in enumerate(files):
             mime_type = mimetypes.guess_type(path)[0]
             if not mime_type:
                 mime_type = "application/octet-stream"
-            if set_private_acl and path.startswith("report"):
-                acl = "private"
-            else:
-                acl = "public-read"
             self._s3_client.put_object(
                 Bucket=self._bucketname,
                 Body=data,
                 Key=self._s3_key(path),
                 ContentType=mime_type,
-                ACL=acl,
+                ACL="public-read",
             )
             LOGGER.debug('Uploaded: "%s"', path)
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2018-2019 Streamlit Inc.
+# Copyright 2018-2020 Streamlit Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,14 +31,16 @@ from streamlit.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-def marshall(proto, data=None, spec=None, width=0, **kwargs):
+def marshall(proto, data=None, spec=None, use_container_width=False, **kwargs):
     """Construct a Vega-Lite chart object.
 
     See DeltaGenerator.vega_lite_chart for docs.
     """
     # Support passing data inside spec['datasets'] and spec['data'].
     # (The data gets pulled out of the spec dict later on.)
-    if type(data) in dict_types and spec is None: # noqa: F821 pylint:disable=undefined-variable
+    if (
+        type(data) in dict_types and spec is None
+    ):  # noqa: F821 pylint:disable=undefined-variable
         spec = data
         data = None
 
@@ -61,12 +63,8 @@ def marshall(proto, data=None, spec=None, width=0, **kwargs):
     if len(spec) == 0:
         raise ValueError("Vega-Lite charts require a non-empty spec dict.")
 
-    # TODO: Improve autosizing code. It doesn't work with some kinds of charts,
-    # like composed charts, for example.
-    if width >= 0 and "width" not in spec:
-        spec["width"] = width
-        if "autosize" not in spec:
-            spec["autosize"] = {"type": "fit", "contains": "padding"}
+    if "autosize" not in spec:
+        spec["autosize"] = {"type": "fit", "contains": "padding"}
 
     # Pull data out of spec dict when it's in a 'dataset' key:
     #   marshall(proto, {datasets: {foo: df1, bar: df2}, ...})
@@ -86,7 +84,9 @@ def marshall(proto, data=None, spec=None, width=0, **kwargs):
     if "data" in spec:
         data_spec = spec["data"]
 
-        if type(data_spec) in dict_types: # noqa: F821 pylint:disable=undefined-variable
+        if (
+            type(data_spec) in dict_types
+        ):  # noqa: F821 pylint:disable=undefined-variable
             if "values" in data_spec:
                 data = data_spec["values"]
                 del data_spec["values"]
@@ -95,6 +95,7 @@ def marshall(proto, data=None, spec=None, width=0, **kwargs):
             del spec["data"]
 
     proto.spec = json.dumps(spec)
+    proto.use_container_width = use_container_width
 
     if data is not None:
         data_frame_proto.marshall_data_frame(data, proto.data)
