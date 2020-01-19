@@ -61,9 +61,7 @@ class RunningCursor(AbstractCursor):
 
     def get_locked_cursor(self, element):
         locked_cursor = LockedCursor(
-            path=self._path,
-            index=self._index,
-            element=element,
+            path=self._path, index=self._index, element=element,
         )
 
         self._index += 1
