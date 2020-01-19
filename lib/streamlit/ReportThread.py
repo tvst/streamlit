@@ -23,6 +23,8 @@ LOGGER = get_logger(__name__)
 ReportContext = namedtuple(
     "ReportContext",
     [
+        # (dict of str->RunningCursor) Mapping of container name to top-level
+        # cursor.
         "cursors",
         # (callable) Function that enqueues ForwardMsg protos in the websocket.
         "enqueue",
