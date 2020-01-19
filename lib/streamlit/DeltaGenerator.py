@@ -38,11 +38,10 @@ from datetime import time
 
 from streamlit import caching
 from streamlit import config
+from streamlit import elements
 from streamlit import metrics
 from streamlit import type_util
 from streamlit.ReportThread import get_report_ctx
-import streamlit.elements.framework as framework
-from streamlit.elements.Text import Text
 from streamlit.errors import DuplicateWidgetID
 from streamlit.errors import StreamlitAPIException
 from streamlit.js_number import JSNumber
@@ -53,6 +52,7 @@ from streamlit.proto import BlockPath_pb2
 from streamlit.proto import ForwardMsg_pb2
 from streamlit.proto.TextInput_pb2 import TextInput
 from streamlit.proto.NumberInput_pb2 import NumberInput
+import streamlit.elements.framework as framework
 
 
 # setup logging
@@ -358,16 +358,17 @@ class DeltaGenerator(object):
         return wrapper
 
     def altair_chart(self, altair_chart, width=0, use_container_width=False):
-        from streamlit.elements.AltairChart import AltairChart
-        return self.write(AltairChart(altair_chart, width, use_container_width))
+        return self.write(
+            elements.AltairChart(altair_chart, width, use_container_width))
 
     def area_chart(
             self, data=None, width=0, height=0, use_container_width=True):
-        from streamlit.elements.AreaChart import AreaChart
-        return self.write(AreaChart(data, width, height, use_container_width))
+        return self.write(
+            elements.AreaChart(data, width, height, use_container_width))
 
     def text(self, body):
-        return self.write(Text(body))
+        return self.write(
+            elements.Text(body))
 
     def write(self, *args, **kwargs):
         """Write arguments to the app.
@@ -588,8 +589,11 @@ class DeltaGenerator(object):
         # Warn if we're called from within an @st.cache function
         caching.maybe_show_cached_st_function_warning(self)
 
-        msg = element._msg
+        msg = ForwardMsg_pb2.ForwardMsg()
         rv = element.value
+
+        msg.delta.new_element.CopyFrom(element._element)
+
         msg_was_enqueued = False
 
         # Only enqueue message if there's a container.

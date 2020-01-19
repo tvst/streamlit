@@ -54,10 +54,11 @@ class AreaChart(framework.Element):
 
         """
         super(AreaChart, self).__init__()
-        import streamlit.elements.AltairChart as AltairChartModule
+        from streamlit.elements.AltairChart import generate_chart, marshall
 
-        altair_chart = AltairChartModule.generate_chart("area", data, width, height)
-        AltairChartModule.marshall(
-            self._msg.delta.new_element,
+        altair_chart = generate_chart("area", data, width, height)
+        marshall(
+            self._element,
             altair_chart,
-            use_container_width=use_container_width)
+            use_container_width=use_container_width,
+        )

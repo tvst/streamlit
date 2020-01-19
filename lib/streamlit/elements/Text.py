@@ -41,4 +41,4 @@ class Text(framework.Element):
 
         """
         super(Text, self).__init__()
-        self._msg.delta.new_element.text.body = clean_text(body)
+        self._element.text.body = clean_text(body)

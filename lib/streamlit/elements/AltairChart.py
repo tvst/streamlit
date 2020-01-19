@@ -66,7 +66,7 @@ class AltairChart(framework.Element):
 
         """
         super(AltairChart, self).__init__()
-        marshall(self._msg.delta.new_element, altair_chart, width, use_container_width)
+        marshall(self._element, altair_chart, width, use_container_width)
 
 
 def marshall(element, altair_chart, width=0, use_container_width=False):

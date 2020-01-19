@@ -13,16 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from streamlit.proto import ForwardMsg_pb2
+from streamlit.proto import Element_pb2
 
 
 class Element(object):
     def __init__(self):
-        # Should be filled by subclasses. (TODO: Make this an Element.proto)
+        # Should be filled by subclasses.
         # This is meant for internal use in the Streamlit code, and not for use
         # by users. It's been prefixed with an underscore to make sure users
         # don't accidentally modify it.
-        self._msg = ForwardMsg_pb2.ForwardMsg()
+        self._element = Element_pb2.Element()
 
         # Return value for widgets.
         self.value = NoValue
