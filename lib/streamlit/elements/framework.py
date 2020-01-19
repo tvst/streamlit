@@ -19,9 +19,12 @@ from streamlit.proto import ForwardMsg_pb2
 class Element(object):
     def __init__(self):
         # Should be filled by subclasses. (TODO: Make this an Element.proto)
-        self.msg = ForwardMsg_pb2.ForwardMsg()
+        # This is meant for internal use in the Streamlit code, and not for use
+        # by users. It's been prefixed with an underscore to make sure users
+        # don't accidentally modify it.
+        self._msg = ForwardMsg_pb2.ForwardMsg()
 
-        # Return value for widgets. (TODO: Make this pull from WidgetState)
+        # Return value for widgets.
         self.value = NoValue
 
 

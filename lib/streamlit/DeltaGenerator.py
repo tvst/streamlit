@@ -359,8 +359,12 @@ class DeltaGenerator(object):
 
     def altair_chart(self, altair_chart, width=0, use_container_width=False):
         from streamlit.elements.AltairChart import AltairChart
-
         return self.write(AltairChart(altair_chart, width, use_container_width))
+
+    def area_chart(
+            self, data=None, width=0, height=0, use_container_width=True):
+        from streamlit.elements.AreaChart import AreaChart
+        return self.write(AreaChart(data, width, height, use_container_width))
 
     def text(self, body):
         return self.write(Text(body))
@@ -584,7 +588,7 @@ class DeltaGenerator(object):
         # Warn if we're called from within an @st.cache function
         caching.maybe_show_cached_st_function_warning(self)
 
-        msg = element.msg
+        msg = element._msg
         rv = element.value
         msg_was_enqueued = False
 
@@ -1108,50 +1112,6 @@ class DeltaGenerator(object):
         import streamlit.elements.altair as altair
 
         chart = altair.generate_chart("line", data, width, height)
-        altair.marshall(element.vega_lite_chart, chart, use_container_width)
-
-    @_with_element
-    def area_chart(
-        self, element, data=None, width=0, height=0, use_container_width=True
-    ):
-        """Display a area chart.
-
-        This is just syntax-sugar around st.altair_chart. The main difference
-        is this command uses the data's own column and indices to figure out
-        the chart's spec. As a result this is easier to use for many "just plot
-        this" scenarios, while being less customizable.
-
-        Parameters
-        ----------
-        data : pandas.DataFrame, pandas.Styler, numpy.ndarray, Iterable, or dict
-            Data to be plotted.
-
-        width : int
-            The chart width in pixels. If 0, selects the width automatically.
-
-        height : int
-            The chart width in pixels. If 0, selects the height automatically.
-
-        use_container_width : bool
-            If True, set the chart width to the column width. This takes
-            precedence over the width argument.
-
-        Example
-        -------
-        >>> chart_data = pd.DataFrame(
-        ...     np.random.randn(20, 3),
-        ...     columns=['a', 'b', 'c'])
-        ...
-        >>> st.area_chart(chart_data)
-
-        .. output::
-           https://share.streamlit.io/0.50.0-td2L/index.html?id=Pp65STuFj65cJRDfhGh4Jt
-           height: 220px
-
-        """
-        import streamlit.elements.altair as altair
-
-        chart = altair.generate_chart("area", data, width, height)
         altair.marshall(element.vega_lite_chart, chart, use_container_width)
 
     @_with_element

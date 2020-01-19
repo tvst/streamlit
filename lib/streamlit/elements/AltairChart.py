@@ -20,7 +20,6 @@ import pandas as pd
 
 from streamlit import type_util
 from streamlit.elements import framework
-from streamlit.string_util import clean_text
 import streamlit.elements.vega_lite as vega_lite
 
 
@@ -67,35 +66,38 @@ class AltairChart(framework.Element):
 
         """
         super(AltairChart, self).__init__()
+        marshall(self._msg.delta.new_element, altair_chart, width, use_container_width)
 
-        # Normally altair_chart.to_dict() would transform the dataframe used by the
-        # chart into an array of dictionaries. To avoid that, we install a
-        # transformer that replaces datasets with a reference by the object id of
-        # the dataframe. We then fill in the dataset manually later on.
 
-        datasets = {}
+def marshall(element, altair_chart, width=0, use_container_width=False):
+    # Normally altair_chart.to_dict() would transform the dataframe used by the
+    # chart into an array of dictionaries. To avoid that, we install a
+    # transformer that replaces datasets with a reference by the object id of
+    # the dataframe. We then fill in the dataset manually later on.
 
-        def id_transform(data):
-            """Altair data transformer that returns a fake named dataset with the
-            object id."""
-            datasets[id(data)] = data
-            return {"name": str(id(data))}
+    datasets = {}
 
-        alt.data_transformers.register("id", id_transform)
+    def id_transform(data):
+        """Altair data transformer that returns a fake named dataset with the
+        object id."""
+        datasets[id(data)] = data
+        return {"name": str(id(data))}
 
-        with alt.data_transformers.enable("id"):
-            chart_dict = altair_chart.to_dict()
+    alt.data_transformers.register("id", id_transform)
 
-            # Put datasets back into the chart dict but note how they weren't
-            # transformed.
-            chart_dict["datasets"] = datasets
+    with alt.data_transformers.enable("id"):
+        chart_dict = altair_chart.to_dict()
 
-            vega_lite.marshall(
-                self.msg.delta.new_element.vega_lite_chart,
-                data=None,
-                spec=chart_dict,
-                use_container_width=use_container_width,
-            )
+        # Put datasets back into the chart dict but note how they weren't
+        # transformed.
+        chart_dict["datasets"] = datasets
+
+        vega_lite.marshall(
+            element.vega_lite_chart,
+            data=None,
+            spec=chart_dict,
+            use_container_width=use_container_width,
+        )
 
 
 def _is_date_column(df, name):
@@ -121,6 +123,7 @@ def _is_date_column(df, name):
     return isinstance(column[0], date)
 
 
+# TODO: Move this into a separate StreamlitChart module?
 def generate_chart(chart_type, data, width=0, height=0):
     if data is None:
         # Use an empty-ish dict because if we use None the x axis labels rotate

@@ -157,11 +157,11 @@ main = _DeltaGenerator(container="main")
 
 # DeltaGenerator methods:
 
-text = main.text
-write = main.write
-altair_chart = main.altair_chart
+text = main.text  # noqa: E221
+write = main.write  # noqa: E221
+altair_chart = main.altair_chart  # noqa: E221
+area_chart = main.area_chart  # noqa: E221
 
-area_chart = _with_dg(_DeltaGenerator.area_chart)  # noqa: E221
 audio = _with_dg(_DeltaGenerator.audio)  # noqa: E221
 balloons = _with_dg(_DeltaGenerator.balloons)  # noqa: E221
 bar_chart = _with_dg(_DeltaGenerator.bar_chart)  # noqa: E221
