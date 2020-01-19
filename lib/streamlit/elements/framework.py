@@ -18,11 +18,13 @@ from streamlit.proto import Element_pb2
 
 class Element(object):
     def __init__(self):
-        # Should be filled by subclasses.
-        # This is meant for internal use in the Streamlit code, and not for use
-        # by users. It's been prefixed with an underscore to make sure users
-        # don't accidentally modify it.
+        # These should be filled by subclasses. They are meant for internal
+        # use in the Streamlit code, and not for use by users. They have been
+        # prefixed with an underscore to make sure users don't accidentally
+        # modify them.
         self._element = Element_pb2.Element()
+        self._width = None
+        self._height = None
 
         # Return value for widgets.
         self.value = NoValue

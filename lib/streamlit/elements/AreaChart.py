@@ -58,7 +58,5 @@ class AreaChart(framework.Element):
 
         altair_chart = generate_chart("area", data, width, height)
         marshall(
-            self._element,
-            altair_chart,
-            use_container_width=use_container_width,
+            self._element, altair_chart, use_container_width=use_container_width,
         )

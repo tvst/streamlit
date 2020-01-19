@@ -23,6 +23,7 @@ LOGGER = get_logger(__name__)
 ReportContext = namedtuple(
     "ReportContext",
     [
+        "cursors",
         # (callable) Function that enqueues ForwardMsg protos in the websocket.
         "enqueue",
         # (Widgets) The Widgets state object for the report
@@ -81,7 +82,7 @@ class ReportThread(threading.Thread):
     ):
         super(ReportThread, self).__init__(target=target, name=name)
         self.streamlit_report_ctx = ReportContext(
-            enqueue, widgets, _WidgetIDSet(), uploaded_file_mgr
+            {}, enqueue, widgets, _WidgetIDSet(), uploaded_file_mgr
         )
 
 

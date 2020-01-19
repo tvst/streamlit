@@ -36,6 +36,7 @@ from datetime import datetime
 from datetime import date
 from datetime import time
 
+from streamlit import cursor
 from streamlit import caching
 from streamlit import config
 from streamlit import elements
@@ -50,8 +51,8 @@ from streamlit.proto import Alert_pb2
 from streamlit.proto import Balloons_pb2
 from streamlit.proto import BlockPath_pb2
 from streamlit.proto import ForwardMsg_pb2
-from streamlit.proto.TextInput_pb2 import TextInput
 from streamlit.proto.NumberInput_pb2 import NumberInput
+from streamlit.proto.TextInput_pb2 import TextInput
 import streamlit.elements.framework as framework
 
 
@@ -273,39 +274,24 @@ def _get_pandas_index_attr(data, attr):
         return None
 
 
-# TODO: Rename Cursor
+# TODO: Rename Container
 class DeltaGenerator(object):
     """Creator of Delta protobuf messages.
 
     Parameters
     ----------
-    id: int or None
-      ID for deltas, or None to create the root DeltaGenerator (which
-        produces DeltaGenerators with incrementing IDs)
-    last_index: int or None
-      The last index of the DataFrame for the element this DeltaGenerator
-      created. Only applies to elements that transform dataframes,
-      like line charts.
-    is_root: bool
-      If True, this will behave like a root DeltaGenerator which an
-      auto-incrementing ID (in which case, `id` should be None).
-      If False, this will have a fixed ID as determined
-      by the `id` argument.
     container: "main" or "sidebar" or None
       The root container for this DeltaGenerator. If None, this is a null
       DeltaGenerator which doesn't print to the app at all (useful for
       testing).
-    path: tuple of ints
-      The full path of this DeltaGenerator, consisting of the IDs of
-      all ancestors. The 0th item is the topmost ancestor.
+
+    cursor: cursor.AbstractCursor or None
     """
 
     # The pydoc below is for user consumption, so it doesn't talk about
     # DeltaGenerator constructor parameters (which users should never use). For
     # those, see above.
-    def __init__(
-        self, id=0, last_index=None, is_root=True, container="main", path=(),
-    ):
+    def __init__(self, container="main", cursor=None):
         """Inserts or updates elements in Streamlit apps.
 
         As a user, you should never initialize this object by hand. Instead,
@@ -320,13 +306,11 @@ class DeltaGenerator(object):
         an element `foo` inside the sidebar.
 
         """
-        self._id = id  # XXX Rename to _current_index
-        # XXX TODO fix delta_type
-        self._delta_type = None  # XXX rename to _locked_delta_type
-        self._last_index = last_index  # XXX rename to _last_df_index.
-        self._is_root = is_root  # XXX Rename to _is_locked (opposite)
-        self._container = container
-        self._path = path
+        self._container = container  # TODO: Rename to "name"
+
+        # Root DeltaGenerators don't have a self._cursor, since it lives inside
+        # the ReportContext object, which is stored at the thread level.
+        self._cursor = cursor
 
     def __getattr__(self, name):
         import streamlit as st
@@ -359,16 +343,14 @@ class DeltaGenerator(object):
 
     def altair_chart(self, altair_chart, width=0, use_container_width=False):
         return self.write(
-            elements.AltairChart(altair_chart, width, use_container_width))
+            elements.AltairChart(altair_chart, width, use_container_width)
+        )
 
-    def area_chart(
-            self, data=None, width=0, height=0, use_container_width=True):
-        return self.write(
-            elements.AreaChart(data, width, height, use_container_width))
+    def area_chart(self, data=None, width=0, height=0, use_container_width=True):
+        return self.write(elements.AreaChart(data, width, height, use_container_width))
 
     def text(self, body):
-        return self.write(
-            elements.Text(body))
+        return self.write(elements.Text(body))
 
     def write(self, *args, **kwargs):
         """Write arguments to the app.
@@ -556,28 +538,21 @@ class DeltaGenerator(object):
             _, exc, exc_tb = sys.exc_info()
             self.exception(exc, exc_tb)  # noqa: F821
 
-    # Protected (should be used only by Streamlit, not by users).
-    def _reset(self):
-        """Reset delta generator so it starts from index 0."""
-        assert self._is_root
-        self._id = 0
+    def _get_cursor(self):
+        if self._cursor is None:
+            return cursor.get_container_cursor(self._container)
+        else:
+            return self._cursor
 
     def _enqueue_element(
         self,
         element,
-        last_index=None,
-        element_width=None,  # XXX Pull this from the Element.
-        element_height=None,
     ):
         """Create NewElement delta, fill it, and enqueue it.
 
         Parameters
         ----------
         element : framework.Element
-        element_width : int or None
-            Desired width for the element
-        element_height : int or None
-            Desired height for the element
 
         Returns
         -------
@@ -589,7 +564,9 @@ class DeltaGenerator(object):
         # Warn if we're called from within an @st.cache function
         caching.maybe_show_cached_st_function_warning(self)
 
+        # import pdb; pdb.set_trace()
         msg = ForwardMsg_pb2.ForwardMsg()
+        cursor = self._get_cursor()
         rv = element.value
 
         msg.delta.new_element.CopyFrom(element._element)
@@ -606,56 +583,58 @@ class DeltaGenerator(object):
             else:
                 msg.metadata.parent_block.container = BlockPath_pb2.BlockPath.MAIN
 
-            msg.metadata.parent_block.path[:] = self._path
-            msg.metadata.delta_id = self._id
+            msg.metadata.parent_block.path[:] = cursor.path
+            msg.metadata.delta_id = cursor.index
 
-            if element_width is not None:
-                msg.metadata.element_dimension_spec.width = element_width
-            if element_height is not None:
-                msg.metadata.element_dimension_spec.height = element_height
+            if element._width is not None:
+                msg.metadata.element_dimension_spec.width = element._width
+            if element._height is not None:
+                msg.metadata.element_dimension_spec.height = element._height
 
             msg_was_enqueued = _enqueue_message(msg)
 
-        # Either way, return the right kind of DeltaGenerator.
-
-        if not msg_was_enqueued:
-            output_dg = self
-
-        elif self._is_root:
+        if msg_was_enqueued:
+            # Get a DeltaGenerator that is locked to the current element
+            # position.
             output_dg = DeltaGenerator(
-                id=msg.metadata.delta_id,
-                last_index=last_index,
                 container=self._container,
-                is_root=False,
+                cursor=cursor.get_locked_cursor(element),
             )
-            self._id += 1
         else:
-            self._last_index = last_index
+            # If the message was not enqueued, just return self since it's a
+            # no-op from the point of view of the app.
             output_dg = self
 
         return _value_or_dg(rv, output_dg)
 
+    # Hidden from user for now.
     def _block(self):
         if self._container is None:
             return self
 
+        parent_cursor = self._get_cursor()
+
         msg = ForwardMsg_pb2.ForwardMsg()
         msg.delta.new_block = True
         msg.metadata.parent_block.container = self._container
-        msg.metadata.parent_block.path[:] = self._path
-        msg.metadata.delta_id = self._id
+        msg.metadata.parent_block.path[:] = parent_cursor.path
+        msg.metadata.delta_id = parent_cursor.index
 
-        new_block_dg = DeltaGenerator(
-            id=0,
-            is_root=True,
+        # Normally we'd return a new DeltaGenerator that uses the locked cursor
+        # below. But in this case we want to return a DeltaGenerator that uses
+        # a brand new cursor for this new block we're creating.
+        block_cursor = cursor.RunningCursor(path=cursor.path + (parent_cursor.index,))
+        block_dg = DeltaGenerator(
             container=self._container,
-            path=self._path + (self._id,),
+            cursor=block_cursor,
         )
 
-        enqueue(msg)
-        self._id += 1
+        # Must be called to increment this cursor's index.
+        parent_cursor.get_locked_cursor(None)
 
-        return new_block_dg
+        _enqueue_message(msg)
+
+        return block_dg
 
     @_with_element
     def balloons(self, element):
@@ -2973,7 +2952,7 @@ class DeltaGenerator(object):
         if self._container is None:
             return self
 
-        if self._is_root:
+        if self._last_element:
             raise StreamlitAPIException("Only existing elements can `add_rows`.")
 
         # Accept syntax st.add_rows(df).
@@ -3004,14 +2983,15 @@ class DeltaGenerator(object):
             st_method(data, **kwargs)
             return
 
+        # XXX TODO get _last_index from locked_cursor.element
         data, self._last_index = _maybe_melt_data_for_add_rows(
             data, self._delta_type, self._last_index
         )
 
         msg = ForwardMsg_pb2.ForwardMsg()
         msg.metadata.parent_block.container = self._container
-        msg.metadata.parent_block.path[:] = self._path
-        msg.metadata.delta_id = self._id
+        msg.metadata.parent_block.path[:] = self._cursor.path
+        msg.metadata.delta_id = self._cursor.index
 
         import streamlit.elements.data_frame_proto as data_frame_proto
 
