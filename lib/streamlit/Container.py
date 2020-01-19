@@ -545,8 +545,7 @@ class Container(object):
             return self._cursor
 
     def _enqueue_element(
-        self,
-        element,
+        self, element,
     ):
         """Create NewElement delta, fill it, and enqueue it.
 
@@ -597,8 +596,7 @@ class Container(object):
             # Get a Container that is locked to the current element
             # position.
             output_ctr = Container(
-                container=self._container,
-                cursor=cursor.get_locked_cursor(element),
+                container=self._container, cursor=cursor.get_locked_cursor(element),
             )
         else:
             # If the message was not enqueued, just return self since it's a
@@ -624,10 +622,7 @@ class Container(object):
         # below. But in this case we want to return a Container that uses
         # a brand new cursor for this new block we're creating.
         block_cursor = cursor.RunningCursor(path=cursor.path + (parent_cursor.index,))
-        block_ctr = Container(
-            container=self._container,
-            cursor=block_cursor,
-        )
+        block_ctr = Container(container=self._container, cursor=block_cursor,)
 
         # Must be called to increment this cursor's index.
         parent_cursor.get_locked_cursor(None)

@@ -33,7 +33,7 @@ from streamlit.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-CONFUSING_STREAMLIT_MODULES = ("streamlit.caching")
+CONFUSING_STREAMLIT_MODULES = ("streamlit.caching",)
 
 CONFUSING_STREAMLIT_SIG_PREFIXES = (
     "(self, element, ",
