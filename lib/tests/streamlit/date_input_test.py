@@ -22,7 +22,7 @@ from datetime import datetime
 from datetime import date
 
 
-class DateInputTest(testutil.DeltaGeneratorTestCase):
+class DateInputTest(testutil.ContainerTestCase):
     """Test ability to marshall date_input protos."""
 
     def test_just_label(self):

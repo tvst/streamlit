@@ -21,7 +21,7 @@ import altair as alt
 import json
 import pandas as pd
 
-from streamlit.elements import altair
+from streamlit.elements import AltairChart
 from tests import testutil
 import streamlit as st
 
@@ -34,7 +34,7 @@ def _deep_get(dictionary, *keys):
     )
 
 
-class AltairTest(testutil.DeltaGeneratorTestCase):
+class AltairTest(testutil.ContainerTestCase):
     """Test ability to marshall altair_chart proto."""
 
     def test_altair_chart(self):
@@ -68,7 +68,7 @@ class AltairTest(testutil.DeltaGeneratorTestCase):
             {"index": [date(2019, 8, 9), date(2019, 8, 10)], "numbers": [1, 10]}
         ).set_index("index")
 
-        chart = altair.generate_chart("line", df)
+        chart = AltairChart.generate_chart("line", df)
         st.altair_chart(chart)
         c = self.get_delta_from_queue().new_element.vega_lite_chart
         spec_dict = json.loads(c.spec)

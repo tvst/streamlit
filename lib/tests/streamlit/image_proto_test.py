@@ -127,7 +127,7 @@ IMAGES = {
 }
 
 
-class ImageProtoTest(testutil.DeltaGeneratorTestCase):
+class ImageProtoTest(testutil.ContainerTestCase):
     """Test streamlit.image_proto."""
 
     @parameterized.expand(

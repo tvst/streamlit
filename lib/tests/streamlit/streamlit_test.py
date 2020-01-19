@@ -77,7 +77,7 @@ class StreamlitTest(unittest.TestCase):
             st.set_option("server.enableCORS", False)
 
 
-class StreamlitAPITest(testutil.DeltaGeneratorTestCase):
+class StreamlitAPITest(testutil.ContainerTestCase):
     """Test Public Streamlit Public APIs."""
 
     def test_st_altair_chart(self):

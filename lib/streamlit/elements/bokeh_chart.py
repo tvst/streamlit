@@ -22,7 +22,7 @@ import json
 def marshall(proto, figure, use_container_width):
     """Construct a Bokeh chart object.
 
-    See DeltaGenerator.bokeh_chart for docs.
+    See Container.bokeh_chart for docs.
     """
     data = json_item(figure)
     proto.figure = json.dumps(data)

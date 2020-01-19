@@ -35,7 +35,7 @@ LOGGER = get_logger(__name__)
 def marshall(new_element_proto, fig=None, clear_figure=True, **kwargs):
     """Construct a matplotlib.pyplot figure.
 
-    See DeltaGenerator.vega_lite_chart for docs.
+    See Container.vega_lite_chart for docs.
     """
     # You can call .savefig() on a Figure object or directly on the pyplot
     # module, in which case you're doing it to the latest Figure.

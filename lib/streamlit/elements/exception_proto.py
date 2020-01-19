@@ -165,7 +165,7 @@ def _get_stack_trace(
         If True, all traceback entries that are in the Streamlit package
         will be removed from the list. We do this for exceptions that result
         from incorrect usage of Streamlit APIs, so that the user doesn't see
-        a bunch of noise about ScriptRunner, DeltaGenerator, etc.
+        a bunch of noise about ScriptRunner, Container, etc.
 
     Returns
     -------

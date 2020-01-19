@@ -31,7 +31,7 @@ import streamlit as st
 df1 = pd.DataFrame({"lat": [1, 2, 3, 4], "lon": [10, 20, 30, 40]})
 
 
-class DeckGLTest(testutil.DeltaGeneratorTestCase):
+class DeckGLTest(testutil.ContainerTestCase):
     """Test ability to marshall deck_gl_chart protos."""
 
     def test_basic(self):

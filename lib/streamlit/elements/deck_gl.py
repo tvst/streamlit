@@ -35,7 +35,7 @@ LOGGER = get_logger(__name__)
 def marshall(proto, spec=None, **kwargs):
     """Marshall a proto with DeckGL chart info.
 
-    See DeltaGenerator.deck_gl_chart for docs.
+    See Container.deck_gl_chart for docs.
     """
     if "data" in kwargs:
         # TODO: Remove this check after 2019-11-28.

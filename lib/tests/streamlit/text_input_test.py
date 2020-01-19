@@ -23,7 +23,7 @@ from tests import testutil
 import streamlit as st
 
 
-class TextInputTest(testutil.DeltaGeneratorTestCase):
+class TextInputTest(testutil.ContainerTestCase):
     """Test ability to marshall text_input protos."""
 
     def test_just_label(self):

@@ -24,7 +24,7 @@ from streamlit.proto.NumberInput_pb2 import NumberInput
 from tests import testutil
 
 
-class NumberInputTest(testutil.DeltaGeneratorTestCase):
+class NumberInputTest(testutil.ContainerTestCase):
     def test_data_type(self):
         """Test that NumberInput.type is set to the proper
         NumberInput.DataType value

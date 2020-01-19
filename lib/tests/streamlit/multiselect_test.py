@@ -24,7 +24,7 @@ from streamlit.errors import StreamlitAPIException
 from tests import testutil
 
 
-class Multiselectbox(testutil.DeltaGeneratorTestCase):
+class Multiselectbox(testutil.ContainerTestCase):
     """Test ability to marshall multiselect protos."""
 
     def test_just_label(self):

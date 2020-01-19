@@ -22,7 +22,7 @@ import unittest
 
 from parameterized import parameterized
 
-from streamlit.DeltaGenerator import DeltaGenerator
+from streamlit.Container import Container
 from streamlit.Report import Report
 from streamlit.ReportQueue import ReportQueue
 from streamlit.ScriptRequestQueue import RerunData
@@ -383,7 +383,7 @@ class TestScriptRunner(ScriptRunner):
 
     def __init__(self, script_name):
         """Initializes the ScriptRunner for the given script_name"""
-        # DeltaGenerator deltas will be enqueued into self.report_queue.
+        # Container deltas will be enqueued into self.report_queue.
         self.report_queue = ReportQueue()
 
         def enqueue_fn(msg):
@@ -397,8 +397,6 @@ class TestScriptRunner(ScriptRunner):
 
         super(TestScriptRunner, self).__init__(
             report=Report(script_path, "test command line"),
-            main_dg=self.main_dg,
-            sidebar_dg=self.sidebar_dg,
             widget_states=WidgetStates(),
             request_queue=self.script_request_queue,
         )

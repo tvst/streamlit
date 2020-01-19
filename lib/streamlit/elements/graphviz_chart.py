@@ -26,7 +26,7 @@ LOGGER = get_logger(__name__)
 def marshall(proto, figure_or_dot):
     """Construct a GraphViz chart object.
 
-    See DeltaGenerator.graphviz_chart for docs.
+    See Container.graphviz_chart for docs.
     """
 
     if type_util.is_graphviz_chart(figure_or_dot):

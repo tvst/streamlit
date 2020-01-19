@@ -98,7 +98,7 @@ def _wraps_with_cleaned_sig(wrapped, num_args_to_remove):
 
     Removes the first N arguments from function signature (where N is
     num_args_to_remove). This is useful since function signatures are visible
-    in our user-facing docs, and many methods in DeltaGenerator have arguments
+    in our user-facing docs, and many methods in Container have arguments
     that users have no access to.
     """
     # By passing (None, ...), we're removing (arg1, ...) from *args
@@ -137,19 +137,19 @@ def _with_element(method):
     Parameters
     ----------
     method : callable
-        A DeltaGenerator method with arguments (self, element, ...)
+        A Container method with arguments (self, element, ...)
 
     Returns
     -------
     callable
-        A new DeltaGenerator method with arguments (self, ...)
+        A new Container method with arguments (self, ...)
 
     """
 
     @_wraps_with_cleaned_sig(method, 2)  # Remove self and element from sig.
-    def wrapped_method(dg, *args, **kwargs):
+    def wrapped_method(ctr, *args, **kwargs):
         # Warn if we're called from within an @st.cache function
-        caching.maybe_show_cached_st_function_warning(dg)
+        caching.maybe_show_cached_st_function_warning(ctr)
 
         delta_type = method.__name__
         last_index = None
@@ -165,7 +165,7 @@ def _with_element(method):
                     last_index = None
 
         def marshall_element(element):
-            return method(dg, element, *args, **kwargs)
+            return method(ctr, element, *args, **kwargs)
 
         # return _enqueue_message(marshall_element, last_index)
 
@@ -275,40 +275,40 @@ def _get_pandas_index_attr(data, attr):
 
 
 # TODO: Rename Container
-class DeltaGenerator(object):
+class Container(object):
     """Creator of Delta protobuf messages.
 
     Parameters
     ----------
     container: "main" or "sidebar" or None
-      The root container for this DeltaGenerator. If None, this is a null
-      DeltaGenerator which doesn't print to the app at all (useful for
+      The root container for this Container. If None, this is a null
+      Container which doesn't print to the app at all (useful for
       testing).
 
     cursor: cursor.AbstractCursor or None
     """
 
     # The pydoc below is for user consumption, so it doesn't talk about
-    # DeltaGenerator constructor parameters (which users should never use). For
+    # Container constructor parameters (which users should never use). For
     # those, see above.
     def __init__(self, container="main", cursor=None):
         """Inserts or updates elements in Streamlit apps.
 
         As a user, you should never initialize this object by hand. Instead,
-        DeltaGenerator objects are initialized for you in two places:
+        Container objects are initialized for you in two places:
 
-        1) When you call `dg = st.foo()` for some method "foo", sometimes `dg`
-        is a DeltaGenerator object. You can call methods on the `dg` object to
+        1) When you call `ctr = st.foo()` for some method "foo", sometimes `ctr`
+        is a Container object. You can call methods on the `ctr` object to
         update the element `foo` that appears in the Streamlit app.
 
         2) This is an internal detail, but `st.sidebar` itself is a
-        DeltaGenerator. That's why you can call `st.sidebar.foo()` to place
+        Container. That's why you can call `st.sidebar.foo()` to place
         an element `foo` inside the sidebar.
 
         """
         self._container = container  # TODO: Rename to "name"
 
-        # Root DeltaGenerators don't have a self._cursor, since it lives inside
+        # Root Containers don't have a self._cursor, since it lives inside
         # the ReportContext object, which is stored at the thread level.
         self._cursor = cursor
 
@@ -329,7 +329,7 @@ class DeltaGenerator(object):
                 else:
                     message = (
                         "Method `%(name)s()` does not exist for "
-                        "`DeltaGenerator` objects. Did you mean "
+                        "`Container` objects. Did you mean "
                         "`st.%(name)s()`?" % {"name": name}
                     )
             else:
@@ -545,7 +545,8 @@ class DeltaGenerator(object):
             return self._cursor
 
     def _enqueue_element(
-        self, element,
+        self,
+        element,
     ):
         """Create NewElement delta, fill it, and enqueue it.
 
@@ -555,8 +556,8 @@ class DeltaGenerator(object):
 
         Returns
         -------
-        DeltaGenerator
-            A DeltaGenerator that can be used to modify the newly-created
+        Container
+            A Container that can be used to modify the newly-created
             element.
 
         """
@@ -593,17 +594,18 @@ class DeltaGenerator(object):
             msg_was_enqueued = _enqueue_message(msg)
 
         if msg_was_enqueued:
-            # Get a DeltaGenerator that is locked to the current element
+            # Get a Container that is locked to the current element
             # position.
-            output_dg = DeltaGenerator(
-                container=self._container, cursor=cursor.get_locked_cursor(element),
+            output_ctr = Container(
+                container=self._container,
+                cursor=cursor.get_locked_cursor(element),
             )
         else:
             # If the message was not enqueued, just return self since it's a
             # no-op from the point of view of the app.
-            output_dg = self
+            output_ctr = self
 
-        return _value_or_dg(rv, output_dg)
+        return _value_or_ctr(rv, output_ctr)
 
     # Hidden from user for now.
     def _block(self):
@@ -618,18 +620,21 @@ class DeltaGenerator(object):
         msg.metadata.parent_block.path[:] = parent_cursor.path
         msg.metadata.delta_id = parent_cursor.index
 
-        # Normally we'd return a new DeltaGenerator that uses the locked cursor
-        # below. But in this case we want to return a DeltaGenerator that uses
+        # Normally we'd return a new Container that uses the locked cursor
+        # below. But in this case we want to return a Container that uses
         # a brand new cursor for this new block we're creating.
         block_cursor = cursor.RunningCursor(path=cursor.path + (parent_cursor.index,))
-        block_dg = DeltaGenerator(container=self._container, cursor=block_cursor,)
+        block_ctr = Container(
+            container=self._container,
+            cursor=block_cursor,
+        )
 
         # Must be called to increment this cursor's index.
         parent_cursor.get_locked_cursor(None)
 
         _enqueue_message(msg)
 
-        return block_dg
+        return block_ctr
 
     @_with_element
     def balloons(self, element):
@@ -3044,17 +3049,17 @@ def _clean_text(text):
     return textwrap.dedent(str(text)).strip()
 
 
-def _value_or_dg(value, dg):
-    """Return value, None or dg.
+def _value_or_ctr(value, ctr):
+    """Return value, None or ctr.
 
     Widgets have return values unlike other elements and may want to return
     `None`. We create a special `NoValue` class for this scenario since `None`
-    return values get replaced with a DeltaGenerator.
+    return values get replaced with a Container.
     """
     if value is framework.NoValue:
         return None
     if value is None:
-        return dg
+        return ctr
     return value
 
 

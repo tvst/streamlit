@@ -30,7 +30,7 @@ import numpy as np
 is_python_2 = sys.version_info[0] == 2
 
 
-class StHelpTest(testutil.DeltaGeneratorTestCase):
+class StHelpTest(testutil.ContainerTestCase):
     """Test st.help."""
 
     def test_basic_func_with_doc(self):
@@ -70,8 +70,8 @@ class StHelpTest(testutil.DeltaGeneratorTestCase):
         self.assertEqual("(some_param, another_param=123)", ds.signature)
         self.assertEqual("No docs available.", ds.doc_string)
 
-    def test_deltagenerator_func(self):
-        """Test Streamlit DeltaGenerator function."""
+    def test_container_func(self):
+        """Test Streamlit Container function."""
 
         st.help(st.audio)
 
@@ -86,8 +86,8 @@ class StHelpTest(testutil.DeltaGeneratorTestCase):
             self.assertEqual("(data, format='audio/wav', start_time=0)", ds.signature)
         self.assertTrue(ds.doc_string.startswith("Display an audio player"))
 
-    def test_unwrapped_deltagenerator_func(self):
-        """Test unwrapped Streamlit DeltaGenerator function."""
+    def test_unwrapped_container_func(self):
+        """Test unwrapped Streamlit Container function."""
         st.help(st.dataframe)
 
         ds = self.get_delta_from_queue().new_element.doc_string

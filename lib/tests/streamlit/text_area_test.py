@@ -21,7 +21,7 @@ from tests import testutil
 import streamlit as st
 
 
-class TextAreaTest(testutil.DeltaGeneratorTestCase):
+class TextAreaTest(testutil.ContainerTestCase):
     """Test ability to marshall text_area protos."""
 
     def test_just_label(self):

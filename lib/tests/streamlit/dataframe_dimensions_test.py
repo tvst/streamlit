@@ -27,7 +27,7 @@ from tests import testutil
 import streamlit as st
 
 
-class DeltaGeneratorDataframeTest(testutil.DeltaGeneratorTestCase):
+class ContainerDataframeTest(testutil.ContainerTestCase):
     """Test the metadata in the serialized delta message for the different
     dimension specifier options.
     """
@@ -62,6 +62,6 @@ class DeltaGeneratorDataframeTest(testutil.DeltaGeneratorTestCase):
 
     def _get_metadata(self):
         """Returns the metadata for the most recent element in the
-        DeltaGenerator queue
+        Container queue
         """
         return self.report_queue._queue[-1].metadata

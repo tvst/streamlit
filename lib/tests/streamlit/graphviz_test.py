@@ -21,7 +21,7 @@ from tests import testutil
 import streamlit as st
 
 
-class GraphvizTest(testutil.DeltaGeneratorTestCase):
+class GraphvizTest(testutil.ContainerTestCase):
     """Test ability to marshall graphviz_chart protos."""
 
     def test_spec(self):

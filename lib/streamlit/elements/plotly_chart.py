@@ -44,7 +44,7 @@ SHARING_MODES = set(
 def marshall(proto, figure_or_data, use_container_width, sharing, **kwargs):
     """Marshall a proto with a Plotly spec.
 
-    See DeltaGenerator.plotly_chart for docs.
+    See Container.plotly_chart for docs.
     """
     # NOTE: "figure_or_data" is the name used in Plotly's .plot() method
     # for their main parameter. I don't like the name, but its best to keep

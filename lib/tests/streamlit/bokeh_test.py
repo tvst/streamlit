@@ -21,7 +21,7 @@ from tests import testutil
 import streamlit as st
 
 
-class BokehTest(testutil.DeltaGeneratorTestCase):
+class BokehTest(testutil.ContainerTestCase):
     """Test ability to marshall bokeh_chart protos."""
 
     def test_figure(self):

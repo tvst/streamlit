@@ -32,7 +32,7 @@ import streamlit.elements.deck_gl_json_chart as deck_gl_json_chart
 df1 = pd.DataFrame({"lat": [1, 2, 3, 4], "lon": [10, 20, 30, 40]})
 
 
-class PyDeckTest(testutil.DeltaGeneratorTestCase):
+class PyDeckTest(testutil.ContainerTestCase):
     def test_basic(self):
         """Test that pydeck object orks."""
 

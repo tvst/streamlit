@@ -24,7 +24,7 @@ from streamlit.errors import StreamlitAPIException
 from tests import testutil
 
 
-class RadioTest(testutil.DeltaGeneratorTestCase):
+class RadioTest(testutil.ContainerTestCase):
     """Test ability to marshall radio protos."""
 
     def test_just_label(self):

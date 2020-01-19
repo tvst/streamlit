@@ -24,7 +24,7 @@ from streamlit.js_number import JSNumber
 from tests import testutil
 
 
-class SliderTest(testutil.DeltaGeneratorTestCase):
+class SliderTest(testutil.ContainerTestCase):
     """Test ability to marshall slider protos."""
 
     def test_just_label(self):

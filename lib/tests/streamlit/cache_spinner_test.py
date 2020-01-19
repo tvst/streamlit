@@ -29,7 +29,7 @@ def function_with_spinner():
     return 3
 
 
-class CacheSpinnerTest(testutil.DeltaGeneratorTestCase):
+class CacheSpinnerTest(testutil.ContainerTestCase):
     """
     We test the ability to turn on and off the spinner with the show_spinner
     option by inspecting the report queue.

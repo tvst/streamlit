@@ -25,7 +25,7 @@ class SomeObj(object):
     pass
 
 
-class CheckboxTest(testutil.DeltaGeneratorTestCase):
+class CheckboxTest(testutil.ContainerTestCase):
     """Test ability to marshall checkbox protos."""
 
     def test_just_label(self):

@@ -115,31 +115,31 @@ def suppress_cached_st_function_warning():
         assert _cache_info.suppress_st_function_warning >= 0
 
 
-def _show_cached_st_function_warning(dg):
+def _show_cached_st_function_warning(ctr):
     # Avoid infinite recursion by suppressing additional cached
     # function warnings from within the cached function warning.
     with suppress_cached_st_function_warning():
-        dg.warning(CACHED_ST_FUNCTION_WARNING)
+        ctr.warning(CACHED_ST_FUNCTION_WARNING)
 
 
-def maybe_show_cached_st_function_warning(dg):
+def maybe_show_cached_st_function_warning(ctr):
     """If appropriate, warn about calling st.foo inside @cache.
 
-    DeltaGenerator's @_with_element and @_widget wrappers use this to warn
+    Container's @_with_element and @_widget wrappers use this to warn
     the user when they're calling st.foo() from within a function that is
     wrapped in @st.cache.
 
     Parameters
     ----------
-    dg : DeltaGenerator
-        The DeltaGenerator to publish the warning to.
+    ctr : Container
+        The Container to publish the warning to.
 
     """
     if (
         _cache_info.within_cached_func > 0
         and _cache_info.suppress_st_function_warning <= 0
     ):
-        _show_cached_st_function_warning(dg)
+        _show_cached_st_function_warning(ctr)
 
 
 class _AddCopy(ast.NodeTransformer):

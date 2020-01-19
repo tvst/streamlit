@@ -19,7 +19,7 @@ from tests import testutil
 import streamlit as st
 
 
-class DeltaGeneratorWriteTest(testutil.DeltaGeneratorTestCase):
+class EchoTest(testutil.ContainerTestCase):
     def test_echo(self):
         # The empty lines below are part of the test. Do not remove them.
         with st.echo():

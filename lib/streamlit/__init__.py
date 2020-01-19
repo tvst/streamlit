@@ -117,7 +117,7 @@ from streamlit import type_util as _type_util
 from streamlit import source_util as _source_util
 from streamlit.ReportThread import get_report_ctx as _get_report_ctx
 from streamlit.ReportThread import add_report_ctx as _add_report_ctx
-from streamlit.DeltaGenerator import DeltaGenerator as _DeltaGenerator
+from streamlit.Container import Container as _Container
 from streamlit.errors import StreamlitAPIException
 
 # Modules that the user should have access to.
@@ -125,7 +125,7 @@ from streamlit.caching import cache  # noqa: F401
 import streamlit.elements as elements  # noqa: F401
 
 # This is set to True inside cli._main_run(), and is False otherwise.
-# If False, we should assume that DeltaGenerator functions are effectively
+# If False, we should assume that Container functions are effectively
 # no-ops, and adapt gracefully.
 _is_running_with_streamlit = False
 
@@ -142,7 +142,7 @@ _config.on_config_parsed(_set_log_level)
 
 
 # XXX REMOVE
-def _with_dg(method):
+def _with_ctr(method):
     return method
 
 
@@ -151,8 +151,8 @@ def _reset():
 
 
 # Sidebar
-sidebar = _DeltaGenerator(container="sidebar")
-main = _DeltaGenerator(container="main")
+sidebar = _Container(container="sidebar")
+main = _Container(container="main")
 
 # Main methods:
 text = main.text  # noqa: E221
@@ -173,49 +173,49 @@ area_chart = main.area_chart  # noqa: E221
 # audio
 # video
 
-# audio = _with_dg(_DeltaGenerator.audio)  # noqa: E221
-# balloons = _with_dg(_DeltaGenerator.balloons)  # noqa: E221
-# bar_chart = _with_dg(_DeltaGenerator.bar_chart)  # noqa: E221
-# bokeh_chart = _with_dg(_DeltaGenerator.bokeh_chart)  # noqa: E221
-# button = _with_dg(_DeltaGenerator.button)  # noqa: E221
-# checkbox = _with_dg(_DeltaGenerator.checkbox)  # noqa: E221
-# code = _with_dg(_DeltaGenerator.code)  # noqa: E221
-# dataframe = _with_dg(_DeltaGenerator.dataframe)  # noqa: E221
-# date_input = _with_dg(_DeltaGenerator.date_input)  # noqa: E221
-# deck_gl_chart = _with_dg(_DeltaGenerator.deck_gl_chart)  # noqa: E221
-# pydeck_chart = _with_dg(_DeltaGenerator.pydeck_chart)  # noqa: E221
-# empty = _with_dg(_DeltaGenerator.empty)  # noqa: E221
-# error = _with_dg(_DeltaGenerator.error)  # noqa: E221
-# exception = _with_dg(_DeltaGenerator.exception)  # noqa: E221
-# file_uploader = _with_dg(_DeltaGenerator.file_uploader)  # noqa: E221
-# graphviz_chart = _with_dg(_DeltaGenerator.graphviz_chart)  # noqa: E221
-# header = _with_dg(_DeltaGenerator.header)  # noqa: E221
-# help = _with_dg(_DeltaGenerator.help)  # noqa: E221
-# image = _with_dg(_DeltaGenerator.image)  # noqa: E221
-# info = _with_dg(_DeltaGenerator.info)  # noqa: E221
-# json = _with_dg(_DeltaGenerator.json)  # noqa: E221
-# latex = _with_dg(_DeltaGenerator.latex)  # noqa: E221
-# line_chart = _with_dg(_DeltaGenerator.line_chart)  # noqa: E221
-# map = _with_dg(_DeltaGenerator.map)  # noqa: E221
-# markdown = _with_dg(_DeltaGenerator.markdown)  # noqa: E221
-# multiselect = _with_dg(_DeltaGenerator.multiselect)  # noqa: E221
-# number_input = _with_dg(_DeltaGenerator.number_input)  # noqa: E221
-# plotly_chart = _with_dg(_DeltaGenerator.plotly_chart)  # noqa: E221
-# progress = _with_dg(_DeltaGenerator.progress)  # noqa: E221
-# pyplot = _with_dg(_DeltaGenerator.pyplot)  # noqa: E221
-# radio = _with_dg(_DeltaGenerator.radio)  # noqa: E221
-# selectbox = _with_dg(_DeltaGenerator.selectbox)  # noqa: E221
-# slider = _with_dg(_DeltaGenerator.slider)  # noqa: E221
-# subheader = _with_dg(_DeltaGenerator.subheader)  # noqa: E221
-# success = _with_dg(_DeltaGenerator.success)  # noqa: E221
-# table = _with_dg(_DeltaGenerator.table)  # noqa: E221
-# text_area = _with_dg(_DeltaGenerator.text_area)  # noqa: E221
-# text_input = _with_dg(_DeltaGenerator.text_input)  # noqa: E221
-# time_input = _with_dg(_DeltaGenerator.time_input)  # noqa: E221
-# title = _with_dg(_DeltaGenerator.title)  # noqa: E221
-# vega_lite_chart = _with_dg(_DeltaGenerator.vega_lite_chart)  # noqa: E221
-# video = _with_dg(_DeltaGenerator.video)  # noqa: E221
-# warning = _with_dg(_DeltaGenerator.warning)  # noqa: E221
+# audio = _with_ctr(_Container.audio)  # noqa: E221
+# balloons = _with_ctr(_Container.balloons)  # noqa: E221
+# bar_chart = _with_ctr(_Container.bar_chart)  # noqa: E221
+# bokeh_chart = _with_ctr(_Container.bokeh_chart)  # noqa: E221
+# button = _with_ctr(_Container.button)  # noqa: E221
+# checkbox = _with_ctr(_Container.checkbox)  # noqa: E221
+# code = _with_ctr(_Container.code)  # noqa: E221
+# dataframe = _with_ctr(_Container.dataframe)  # noqa: E221
+# date_input = _with_ctr(_Container.date_input)  # noqa: E221
+# deck_gl_chart = _with_ctr(_Container.deck_gl_chart)  # noqa: E221
+# pydeck_chart = _with_ctr(_Container.pydeck_chart)  # noqa: E221
+# empty = _with_ctr(_Container.empty)  # noqa: E221
+# error = _with_ctr(_Container.error)  # noqa: E221
+# exception = _with_ctr(_Container.exception)  # noqa: E221
+# file_uploader = _with_ctr(_Container.file_uploader)  # noqa: E221
+# graphviz_chart = _with_ctr(_Container.graphviz_chart)  # noqa: E221
+# header = _with_ctr(_Container.header)  # noqa: E221
+# help = _with_ctr(_Container.help)  # noqa: E221
+# image = _with_ctr(_Container.image)  # noqa: E221
+# info = _with_ctr(_Container.info)  # noqa: E221
+# json = _with_ctr(_Container.json)  # noqa: E221
+# latex = _with_ctr(_Container.latex)  # noqa: E221
+# line_chart = _with_ctr(_Container.line_chart)  # noqa: E221
+# map = _with_ctr(_Container.map)  # noqa: E221
+# markdown = _with_ctr(_Container.markdown)  # noqa: E221
+# multiselect = _with_ctr(_Container.multiselect)  # noqa: E221
+# number_input = _with_ctr(_Container.number_input)  # noqa: E221
+# plotly_chart = _with_ctr(_Container.plotly_chart)  # noqa: E221
+# progress = _with_ctr(_Container.progress)  # noqa: E221
+# pyplot = _with_ctr(_Container.pyplot)  # noqa: E221
+# radio = _with_ctr(_Container.radio)  # noqa: E221
+# selectbox = _with_ctr(_Container.selectbox)  # noqa: E221
+# slider = _with_ctr(_Container.slider)  # noqa: E221
+# subheader = _with_ctr(_Container.subheader)  # noqa: E221
+# success = _with_ctr(_Container.success)  # noqa: E221
+# table = _with_ctr(_Container.table)  # noqa: E221
+# text_area = _with_ctr(_Container.text_area)  # noqa: E221
+# text_input = _with_ctr(_Container.text_input)  # noqa: E221
+# time_input = _with_ctr(_Container.time_input)  # noqa: E221
+# title = _with_ctr(_Container.title)  # noqa: E221
+# vega_lite_chart = _with_ctr(_Container.vega_lite_chart)  # noqa: E221
+# video = _with_ctr(_Container.video)  # noqa: E221
+# warning = _with_ctr(_Container.warning)  # noqa: E221
 
 # Config
 

@@ -18,13 +18,12 @@ import threading
 import unittest
 
 from streamlit import config
-from streamlit.DeltaGenerator import DeltaGenerator
+from streamlit.Container import Container
 from streamlit.ReportQueue import ReportQueue
 from streamlit.ReportThread import REPORT_CONTEXT_ATTR_NAME
 from streamlit.ReportThread import ReportContext
 from streamlit.ReportThread import _WidgetIDSet
 from streamlit.widgets import Widgets
-from streamlit.proto.BlockPath_pb2 import BlockPath
 from streamlit.UploadedFileManager import UploadedFileManager
 
 
@@ -50,19 +49,15 @@ def build_mock_config_is_manually_set(overrides_dict):
     return mock_config_is_manually_set
 
 
-class DeltaGeneratorTestCase(unittest.TestCase):
+class ContainerTestCase(unittest.TestCase):
     def setUp(self, override_root=True):
         self.report_queue = ReportQueue()
 
         if override_root:
-            main_dg = self.new_delta_generator()
-            sidebar_dg = self.new_delta_generator(container=BlockPath.SIDEBAR)
             setattr(
                 threading.current_thread(),
                 REPORT_CONTEXT_ATTR_NAME,
                 ReportContext(
-                    main_dg=main_dg,
-                    sidebar_dg=sidebar_dg,
                     widgets=Widgets(),
                     widget_ids_this_run=_WidgetIDSet(),
                     uploaded_file_mgr=UploadedFileManager(),
@@ -74,7 +69,7 @@ class DeltaGeneratorTestCase(unittest.TestCase):
         if hasattr(threading.current_thread(), REPORT_CONTEXT_ATTR_NAME):
             delattr(threading.current_thread(), REPORT_CONTEXT_ATTR_NAME)
 
-    def new_delta_generator(self, *args, **kwargs):
+    def new_container(self, *args, **kwargs):
         def enqueue_fn(msg):
             self.report_queue.enqueue(msg)
             return True
@@ -87,7 +82,7 @@ class DeltaGeneratorTestCase(unittest.TestCase):
         else:
             enqueue = enqueue_fn
 
-        return DeltaGenerator(enqueue, *args, **kwargs)
+        return Container(enqueue, *args, **kwargs)
 
     def get_message_from_queue(self, index=-1):
         """Get a ForwardMsg proto from the queue, by index.

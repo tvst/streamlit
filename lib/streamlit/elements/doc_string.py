@@ -33,7 +33,7 @@ from streamlit.logger import get_logger
 LOGGER = get_logger(__name__)
 
 
-CONFUSING_STREAMLIT_MODULES = ("streamlit.DeltaGenerator", "streamlit.caching")
+CONFUSING_STREAMLIT_MODULES = ("streamlit.caching")
 
 CONFUSING_STREAMLIT_SIG_PREFIXES = (
     "(self, element, ",
@@ -46,7 +46,7 @@ CONFUSING_STREAMLIT_SIG_PREFIXES = (
 def marshall(proto, obj):
     """Construct a DocString object.
 
-    See DeltaGenerator.help for docs.
+    See Container.help for docs.
     """
     try:
         proto.doc_string.name = obj.__name__
@@ -91,23 +91,7 @@ def marshall(proto, obj):
 
 
 def _get_signature(f):
-    is_delta_gen = False
-    try:
-        is_delta_gen = f.__module__ == "streamlit.DeltaGenerator"
-
-        if is_delta_gen:
-            # DeltaGenerator functions are doubly wrapped, and their function
-            # signatures are useless unless we unwrap them.
-            f = _unwrap_decorated_func(f)
-
-    # Functions such as numpy.minimum don't have a __module__ attribute,
-    # since we're only using it to check if its a DeltaGenerator, its ok
-    # to continue
-    except AttributeError:
-        pass
-
     sig = ""
-
     get_signature = None
 
     # Python 3.3+
@@ -126,12 +110,6 @@ def _get_signature(f):
     except ValueError:
         # f is a builtin.
         pass
-
-    if is_delta_gen:
-        for prefix in CONFUSING_STREAMLIT_SIG_PREFIXES:
-            if sig.startswith(prefix):
-                sig = sig.replace(prefix, "(")
-                break
 
     return sig
 

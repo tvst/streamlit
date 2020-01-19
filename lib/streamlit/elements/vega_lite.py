@@ -34,7 +34,7 @@ LOGGER = get_logger(__name__)
 def marshall(proto, data=None, spec=None, use_container_width=False, **kwargs):
     """Construct a Vega-Lite chart object.
 
-    See DeltaGenerator.vega_lite_chart for docs.
+    See Container.vega_lite_chart for docs.
     """
     # Support passing data inside spec['datasets'] and spec['data'].
     # (The data gets pulled out of the spec dict later on.)

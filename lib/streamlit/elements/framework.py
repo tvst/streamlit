@@ -31,9 +31,11 @@ class Element(object):
 
 
 class NoValue(object):
-    """Return this from DeltaGenerator.foo_widget() when you want the st.foo_widget()
-    call to return None. This is needed because `_enqueue` replaces `None` with
-    a `DeltaGenerator` (for use in non-widget elements).
+    """Used to indicate "no value" whenever None has another meaning.
+
+    For example, Container methods return None when their output should be
+    replaced with a locked Container. So when we want the output not to be
+    replaced, they should return NoValue.
     """
 
     pass

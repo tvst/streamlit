@@ -19,7 +19,7 @@ from tests import testutil
 import streamlit as st
 
 
-class ButtonTest(testutil.DeltaGeneratorTestCase):
+class ButtonTest(testutil.ContainerTestCase):
     """Test ability to marshall button protos."""
 
     def test_button(self):

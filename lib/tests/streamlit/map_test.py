@@ -26,7 +26,7 @@ import streamlit as st
 df1 = pd.DataFrame({"lat": [1, 2, 3, 4], "lon": [10, 20, 30, 40]})
 
 
-class StMapTest(testutil.DeltaGeneratorTestCase):
+class StMapTest(testutil.ContainerTestCase):
     """Test ability to marshall deck_gl_json_chart protos via st.map."""
 
     def test_no_args(self):

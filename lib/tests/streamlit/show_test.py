@@ -29,7 +29,7 @@ class ShowTest(unittest.TestCase):
         """Test st.show.
 
         Ideally we could test the order and content of the deltas.
-        But not possible to inject a shared queue in `streamlit._with_dg()`
+        But not possible to inject a shared queue in `streamlit._with_ctr()`
 
         Improvements:
         - verify markdown is escaped on write delta

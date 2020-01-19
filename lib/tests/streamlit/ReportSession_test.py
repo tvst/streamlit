@@ -123,8 +123,8 @@ class ReportSessionSerializationTest(tornado.testing.AsyncTestCase):
         rs._storage = storage
 
         # Send two deltas: empty and markdown
-        rs._main_dg.empty()
-        rs._main_dg.markdown("Text!")
+        rs._main_ctr.empty()
+        rs._main_ctr.markdown("Text!")
 
         yield rs.handle_save_request(_create_mock_websocket())
 

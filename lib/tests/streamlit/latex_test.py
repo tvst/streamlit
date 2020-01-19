@@ -19,7 +19,7 @@ from tests import testutil
 import streamlit as st
 
 
-class LatexTest(testutil.DeltaGeneratorTestCase):
+class LatexTest(testutil.ContainerTestCase):
     """Test ability to marshall latex protos."""
 
     def test_latex(self):

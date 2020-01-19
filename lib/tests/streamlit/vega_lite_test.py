@@ -36,7 +36,7 @@ df2 = pd.DataFrame([["E", "F", "G", "H"], [11, 12, 13, 14]], index=["a", "b"]).T
 autosize_spec = {"autosize": {"type": "fit", "contains": "padding"}}
 
 
-class VegaLiteTest(testutil.DeltaGeneratorTestCase):
+class VegaLiteTest(testutil.ContainerTestCase):
     """Test ability to marshall vega_lite_chart protos."""
 
     def test_no_args(self):

@@ -20,7 +20,7 @@ import streamlit as st
 from streamlit import config
 
 
-class FileUploaderTest(testutil.DeltaGeneratorTestCase):
+class FileUploaderTest(testutil.ContainerTestCase):
     def test_just_label(self):
         """Test that it can be called with no other values."""
         st.file_uploader("the label")

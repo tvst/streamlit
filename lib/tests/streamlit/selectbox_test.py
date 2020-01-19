@@ -24,7 +24,7 @@ from streamlit.errors import StreamlitAPIException
 from tests import testutil
 
 
-class SelectboxTest(testutil.DeltaGeneratorTestCase):
+class SelectboxTest(testutil.ContainerTestCase):
     """Test ability to marshall selectbox protos."""
 
     def test_just_label(self):
