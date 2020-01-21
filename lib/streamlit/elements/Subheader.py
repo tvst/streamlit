@@ -13,33 +13,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from streamlit.string_util import clean_text
 from streamlit.elements import framework
+from streamlit.string_util import clean_text
 
 
-class Text(framework.Element):
-    """Display some fixed-width preformatted text.
+class Subheader(framework.Element):
+    """Display text in subheader formatting.
 
     Parameters
     ----------
     body : str
-        The string to display.
+        The text to display.
 
     Example
     -------
-    >>> st.text('This is some text.')
+    >>> st.subheader('This is a subheader')
 
     ...or:
 
-    >>> el = st.elements.Text('This is some text.')
+    >>> el = st.Subheader('This is a subheader')
     >>> st.write(el)
 
     .. output::
-        https://share.streamlit.io/0.25.0-2JkNY/index.html?id=PYxU1kee5ubuhGR11NsnT1
-        height: 50px
+       https://share.streamlit.io/0.25.0-2JkNY/index.html?id=LBKJTfFUwudrbWENSHV6cJ
+       height: 100px
 
     """
 
     def __init__(self, body):
-        super(Text, self).__init__()
-        self._element.text.body = clean_text(body)
+        super(Subheader, self).__init__()
+        self._element.markdown.body = "### %s" % clean_text(body)

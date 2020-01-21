@@ -16,8 +16,8 @@
 from streamlit.elements import framework
 
 
-class AreaChart(framework.Element):
-    """Display a area chart.
+class LineChart(framework.Element):
+    """Display a line chart.
 
     This is just syntax-sugar around st.altair_chart. The main difference
     is this command uses the data's own column and indices to figure out
@@ -45,7 +45,7 @@ class AreaChart(framework.Element):
     ...     np.random.randn(20, 3),
     ...     columns=['a', 'b', 'c'])
     ...
-    >>> st.area_chart(chart_data)
+    >>> st.line_chart(chart_data)
 
     .. output::
        https://share.streamlit.io/0.50.0-td2L/index.html?id=Pp65STuFj65cJRDfhGh4Jt
@@ -54,10 +54,10 @@ class AreaChart(framework.Element):
     """
 
     def __init__(self, data=None, width=0, height=0, use_container_width=True):
-        super(AreaChart, self).__init__()
+        super(LineChart, self).__init__()
         from streamlit.elements.AltairChart import generate_chart, marshall
 
-        altair_chart = generate_chart("area", data, width, height)
+        altair_chart = generate_chart("line", data, width, height)
         marshall(
             self._element, altair_chart, use_container_width=use_container_width,
         )

@@ -15,4 +15,13 @@
 
 from .AltairChart import AltairChart
 from .AreaChart import AreaChart
+from .BarChart import BarChart
+from .Code import Code
+from .Empty import Empty
+from .Header import Header
+from .Latex import Latex
+from .LineChart import LineChart
+from .Markdown import Markdown
+from .Subheader import Subheader
 from .Text import Text
+from .Title import Title

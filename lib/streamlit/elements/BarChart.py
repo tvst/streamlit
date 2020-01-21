@@ -16,8 +16,8 @@
 from streamlit.elements import framework
 
 
-class AreaChart(framework.Element):
-    """Display a area chart.
+class BarChart(framework.Element):
+    """Display a bar chart.
 
     This is just syntax-sugar around st.altair_chart. The main difference
     is this command uses the data's own column and indices to figure out
@@ -42,10 +42,10 @@ class AreaChart(framework.Element):
     Example
     -------
     >>> chart_data = pd.DataFrame(
-    ...     np.random.randn(20, 3),
+    ...     np.random.randn(50, 3),
     ...     columns=['a', 'b', 'c'])
     ...
-    >>> st.area_chart(chart_data)
+    >>> st.bar_chart(chart_data)
 
     .. output::
        https://share.streamlit.io/0.50.0-td2L/index.html?id=Pp65STuFj65cJRDfhGh4Jt
@@ -54,10 +54,10 @@ class AreaChart(framework.Element):
     """
 
     def __init__(self, data=None, width=0, height=0, use_container_width=True):
-        super(AreaChart, self).__init__()
+        super(BarChart, self).__init__()
         from streamlit.elements.AltairChart import generate_chart, marshall
 
-        altair_chart = generate_chart("area", data, width, height)
+        altair_chart = generate_chart("bar", data, width, height)
         marshall(
             self._element, altair_chart, use_container_width=use_container_width,
         )

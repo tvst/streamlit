@@ -13,33 +13,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from streamlit.string_util import clean_text
 from streamlit.elements import framework
 
 
-class Text(framework.Element):
-    """Display some fixed-width preformatted text.
+class Empty(framework.Element):
+    """Add a placeholder to the app.
 
-    Parameters
-    ----------
-    body : str
-        The string to display.
+    The placeholder can be filled any time by calling methods on the return
+    value.
 
     Example
     -------
-    >>> st.text('This is some text.')
-
-    ...or:
-
-    >>> el = st.elements.Text('This is some text.')
-    >>> st.write(el)
-
-    .. output::
-        https://share.streamlit.io/0.25.0-2JkNY/index.html?id=PYxU1kee5ubuhGR11NsnT1
-        height: 50px
+    >>> my_placeholder = st.empty()
+    >>>
+    >>> # Now replace the placeholder with some text:
+    >>> my_placeholder.text("Hello world!")
+    >>>
+    >>> # And replace the text with an image:
+    >>> my_placeholder.image(my_image_bytes)
 
     """
 
-    def __init__(self, body):
-        super(Text, self).__init__()
-        self._element.text.body = clean_text(body)
+    def __init__(self):
+        super(Empty, self).__init__()
+        # The protobuf needs something to be set
+        self._element.empty.unused = True

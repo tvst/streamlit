@@ -27,7 +27,7 @@ class Element(object):
         self._height = None
 
         # Return value for widgets.
-        self.value = NoValue
+        self.value = None
 
 
 class NoValue(object):

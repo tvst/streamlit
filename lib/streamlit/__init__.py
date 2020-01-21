@@ -155,67 +155,57 @@ sidebar = _Container(container="sidebar")
 main = _Container(container="main")
 
 # Main methods:
-text = main.text  # noqa: E221
-write = main.write  # noqa: E221
 altair_chart = main.altair_chart  # noqa: E221
 area_chart = main.area_chart  # noqa: E221
-# line_chart
-# bar_chart
+bar_chart = main.bar_chart  # noqa: E221
+code = main.code  # noqa: E221
+empty = main.empty  # noqa: E221
+header = main.header  # noqa: E221
+latex = main.latex  # noqa: E221
+line_chart = main.line_chart  # noqa: E221
+markdown = main.markdown  # noqa: E221
+subheader = main.subheader  # noqa: E221
+text = main.text  # noqa: E221
+title = main.title  # noqa: E221
+write = main.write  # noqa: E221
 # vega_lite_chart
-# markdown
-# title
-# header
-# subheader
 # warning
 # success
 # error
 # info
 # audio
 # video
+# image
+# exception
+# balloons
+# progress
+# json
+# help
 
-# audio = _with_ctr(_Container.audio)  # noqa: E221
-# balloons = _with_ctr(_Container.balloons)  # noqa: E221
-# bar_chart = _with_ctr(_Container.bar_chart)  # noqa: E221
-# bokeh_chart = _with_ctr(_Container.bokeh_chart)  # noqa: E221
-# button = _with_ctr(_Container.button)  # noqa: E221
-# checkbox = _with_ctr(_Container.checkbox)  # noqa: E221
-# code = _with_ctr(_Container.code)  # noqa: E221
+# text_input
+# text_area
+# multiselect
+# number_input
+# radio
+# selectbox
+# slider
+# time_input
+# button
+# checkbox
+# date_input
+
+# file_uploader
+
 # dataframe = _with_ctr(_Container.dataframe)  # noqa: E221
-# date_input = _with_ctr(_Container.date_input)  # noqa: E221
+# table = _with_ctr(_Container.table)  # noqa: E221
+
+# bokeh_chart = _with_ctr(_Container.bokeh_chart)  # noqa: E221
 # deck_gl_chart = _with_ctr(_Container.deck_gl_chart)  # noqa: E221
 # pydeck_chart = _with_ctr(_Container.pydeck_chart)  # noqa: E221
-# empty = _with_ctr(_Container.empty)  # noqa: E221
-# error = _with_ctr(_Container.error)  # noqa: E221
-# exception = _with_ctr(_Container.exception)  # noqa: E221
-# file_uploader = _with_ctr(_Container.file_uploader)  # noqa: E221
 # graphviz_chart = _with_ctr(_Container.graphviz_chart)  # noqa: E221
-# header = _with_ctr(_Container.header)  # noqa: E221
-# help = _with_ctr(_Container.help)  # noqa: E221
-# image = _with_ctr(_Container.image)  # noqa: E221
-# info = _with_ctr(_Container.info)  # noqa: E221
-# json = _with_ctr(_Container.json)  # noqa: E221
-# latex = _with_ctr(_Container.latex)  # noqa: E221
-# line_chart = _with_ctr(_Container.line_chart)  # noqa: E221
 # map = _with_ctr(_Container.map)  # noqa: E221
-# markdown = _with_ctr(_Container.markdown)  # noqa: E221
-# multiselect = _with_ctr(_Container.multiselect)  # noqa: E221
-# number_input = _with_ctr(_Container.number_input)  # noqa: E221
 # plotly_chart = _with_ctr(_Container.plotly_chart)  # noqa: E221
-# progress = _with_ctr(_Container.progress)  # noqa: E221
 # pyplot = _with_ctr(_Container.pyplot)  # noqa: E221
-# radio = _with_ctr(_Container.radio)  # noqa: E221
-# selectbox = _with_ctr(_Container.selectbox)  # noqa: E221
-# slider = _with_ctr(_Container.slider)  # noqa: E221
-# subheader = _with_ctr(_Container.subheader)  # noqa: E221
-# success = _with_ctr(_Container.success)  # noqa: E221
-# table = _with_ctr(_Container.table)  # noqa: E221
-# text_area = _with_ctr(_Container.text_area)  # noqa: E221
-# text_input = _with_ctr(_Container.text_input)  # noqa: E221
-# time_input = _with_ctr(_Container.time_input)  # noqa: E221
-# title = _with_ctr(_Container.title)  # noqa: E221
-# vega_lite_chart = _with_ctr(_Container.vega_lite_chart)  # noqa: E221
-# video = _with_ctr(_Container.video)  # noqa: E221
-# warning = _with_ctr(_Container.warning)  # noqa: E221
 
 # Config
 

@@ -341,6 +341,8 @@ class Container(object):
 
         return wrapper
 
+    # XXX TODO Write macro to copy docstrings.
+
     def altair_chart(self, altair_chart, width=0, use_container_width=False):
         return self.write(
             elements.AltairChart(altair_chart, width, use_container_width)
@@ -348,6 +350,33 @@ class Container(object):
 
     def area_chart(self, data=None, width=0, height=0, use_container_width=True):
         return self.write(elements.AreaChart(data, width, height, use_container_width))
+
+    def bar_chart(self, data=None, width=0, height=0, use_container_width=True):
+        return self.write(elements.BarChart(data, width, height, use_container_width))
+
+    def code(self, body, language="python"):
+        return self.write(elements.Code(body, language))
+
+    def empty(self):
+        return self.write(elements.Empty())
+
+    def markdown(self, body, unsafe_allow_html=False):
+        return self.write(elements.Markdown(body, unsafe_allow_html))
+
+    def title(self, body):
+        return self.write(elements.Title(body))
+
+    def header(self, body):
+        return self.write(elements.Header(body))
+
+    def latex(self, body):
+        return self.write(elements.Latex(body))
+
+    def line_chart(self, data=None, width=0, height=0, use_container_width=True):
+        return self.write(elements.LineChart(data, width, height, use_container_width))
+
+    def subheader(self, body):
+        return self.write(elements.Subheader(body))
 
     def text(self, body):
         return self.write(elements.Text(body))
@@ -470,73 +499,71 @@ class Container(object):
         unsafe_allow_html = kwargs.get("unsafe_allow_html", False)
 
         try:
-            string_buffer = []
+            els = []
 
-            def flush_buffer():
-                if string_buffer:
-                    self.markdown(
-                        " ".join(string_buffer), unsafe_allow_html=unsafe_allow_html
-                    )  # noqa: F821
-                    string_buffer[:] = []
+            def append_string(s):
+                if len(els) and type(els[-1]) is list:
+                    string_list =els[-1]
+                else:
+                    string_list = []
+                    els.append(string_list)
+                string_list.append(s)
 
             for arg in args:
                 # Order matters!
                 if isinstance(arg, string_types):  # noqa: F821
-                    string_buffer.append(arg)
+                    append_string(arg)
                 elif isinstance(arg, framework.Element):
-                    flush_buffer()
-                    self._enqueue_element(arg)
-                    # XXX TODO: Do this to other write() methods
+                    els.append(arg)
+                    #self._enqueue_element(arg)
                 elif type(arg).__name__ in _DATAFRAME_LIKE_TYPES:
-                    flush_buffer()
                     if len(_np.shape(arg)) > 2:
-                        self.text(arg)
+                        els.append(elements.Text(arg))
                     else:
-                        self.dataframe(arg)  # noqa: F821
+                        els.append(elements.Dataframe(arg))  # noqa: F821
                 elif isinstance(arg, Exception):
-                    flush_buffer()
-                    self.exception(arg)  # noqa: F821
+                    els.append(elements.Exception(arg))  # noqa: F821
                 elif isinstance(arg, _HELP_TYPES):
-                    flush_buffer()
-                    self.help(arg)
+                    els.append(elements.Help(arg))
                 elif _type_util.is_altair_chart(arg):
-                    flush_buffer()
-                    self.altair_chart(arg)
+                    els.append(elements.AltairChart(arg))
                 elif _type_util.is_type(arg, "matplotlib.figure.Figure"):
-                    flush_buffer()
-                    self.pyplot(arg)
+                    els.append(elements.Pyplot(arg))
                 elif _type_util.is_plotly_chart(arg):
-                    flush_buffer()
-                    self.plotly_chart(arg)
+                    els.append(elements.PlotlyChart(arg))
                 elif _type_util.is_type(arg, "bokeh.plotting.figure.Figure"):
-                    flush_buffer()
-                    self.bokeh_chart(arg)
+                    els.append(elements.BokehChart(arg))
                 elif _type_util.is_graphviz_chart(arg):
-                    flush_buffer()
-                    self.graphviz_chart(arg)
+                    els.append(elements.GraphvizChart(arg))
                 elif _type_util.is_sympy_expession(arg):
-                    flush_buffer()
-                    self.latex(arg)
+                    els.append(elements.Latex(arg))
                 elif _type_util.is_keras_model(arg):
                     from tensorflow.python.keras.utils import vis_utils
 
-                    flush_buffer()
                     dot = vis_utils.model_to_dot(arg)
-                    self.graphviz_chart(dot.to_string())
+                    els.append(elements.GraphvizChart(dot.to_string()))
                 elif (type(arg) in dict_types) or (isinstance(arg, list)):  # noqa: F821
-                    flush_buffer()
-                    self.json(arg)
+                    els.append(elements.Json(arg))
                 elif _type_util.is_namedtuple(arg):
-                    flush_buffer()
-                    self.json(_json.dumps(arg._asdict()))
+                    els.append(elements.Json(_json.dumps(arg._asdict())))
                 else:
-                    string_buffer.append("`%s`" % str(arg).replace("`", "\\`"))
+                    append_string("`%s`" % str(arg).replace("`", "\\`"))
 
-            flush_buffer()
+            for i, el in enumerate(els):
+                if type(el) is list:
+                    els[i] = elements.Markdown(
+                        " ".join(el), unsafe_allow_html=unsafe_allow_html)
+
+            out = [self._enqueue_element(el) for el in els]
 
         except Exception:
             _, exc, exc_tb = sys.exc_info()
             self.exception(exc, exc_tb)  # noqa: F821
+
+        if len(out) == 1:
+            return out[0]
+        else:
+            return None
 
     def _get_cursor(self):
         if self._cursor is None:
@@ -563,7 +590,6 @@ class Container(object):
         # Warn if we're called from within an @st.cache function
         caching.maybe_show_cached_st_function_warning(self)
 
-        # import pdb; pdb.set_trace()
         msg = ForwardMsg_pb2.ForwardMsg()
         cursor = self._get_cursor()
         rv = element.value
@@ -646,129 +672,6 @@ class Container(object):
         element.balloons.execution_id = random.randrange(0xFFFFFFFF)
 
     @_with_element
-    def markdown(self, element, body, unsafe_allow_html=False):
-        """Display string formatted as Markdown.
-
-        Parameters
-        ----------
-        body : str
-            The string to display as Github-flavored Markdown. Syntax
-            information can be found at: https://github.github.com/gfm.
-
-            This also supports:
-
-            * Emoji shortcodes, such as `:+1:`  and `:sunglasses:`.
-              For a list of all supported codes,
-              see https://www.webfx.com/tools/emoji-cheat-sheet/.
-
-            * LaTeX expressions, by just wrapping them in "$" or "$$" (the "$$"
-              must be on their own lines). Supported LaTeX functions are listed
-              at https://katex.org/docs/supported.html.
-
-        unsafe_allow_html : bool
-            By default, any HTML tags found in the body will be escaped and
-            therefore treated as pure text. This behavior may be turned off by
-            setting this argument to True.
-
-            That said, we *strongly advise against it*. It is hard to write
-            secure HTML, so by using this argument you may be compromising your
-            users' security. For more information, see:
-
-            https://github.com/streamlit/streamlit/issues/152
-
-            *Also note that `unsafe_allow_html` is a temporary measure and may
-            be removed from Streamlit at any time.*
-
-            If you decide to turn on HTML anyway, we ask you to please tell us
-            your exact use case here:
-
-            https://discuss.streamlit.io/t/96
-
-            This will help us come up with safe APIs that allow you to do what
-            you want.
-
-        Example
-        -------
-        >>> st.markdown('Streamlit is **_really_ cool**.')
-
-        .. output::
-           https://share.streamlit.io/0.25.0-2JkNY/index.html?id=PXz9xgY8aB88eziDVEZLyS
-           height: 50px
-
-        """
-        element.markdown.body = _clean_text(body)
-        element.markdown.allow_html = unsafe_allow_html
-
-    @_with_element
-    def latex(self, element, body):
-        # This docstring needs to be "raw" because of the backslashes in the
-        # example below.
-        r"""Display mathematical expressions formatted as LaTeX.
-
-        Supported LaTeX functions are listed at
-        https://katex.org/docs/supported.html.
-
-        Parameters
-        ----------
-        body : str or SymPy expression
-            The string or SymPy expression to display as LaTeX. If str, it's
-            a good idea to use raw Python strings since LaTeX uses backslashes
-            a lot.
-
-
-        Example
-        -------
-        >>> st.latex(r'''
-        ...     a + ar + a r^2 + a r^3 + \cdots + a r^{n-1} =
-        ...     \sum_{k=0}^{n-1} ar^k =
-        ...     a \left(\frac{1-r^{n}}{1-r}\right)
-        ...     ''')
-
-        .. output::
-           https://share.streamlit.io/0.50.0-td2L/index.html?id=NJFsy6NbGTsH2RF9W6ioQ4
-           height: 75px
-
-        """
-        if type_util.is_sympy_expession(body):
-            import sympy
-
-            body = sympy.latex(body)
-
-        element.markdown.body = "$$\n%s\n$$" % _clean_text(body)
-
-    @_with_element
-    def code(self, element, body, language="python"):
-        """Display a code block with optional syntax highlighting.
-
-        (This is a convenience wrapper around `st.markdown()`)
-
-        Parameters
-        ----------
-        body : str
-            The string to display as code.
-
-        language : str
-            The language that the code is written in, for syntax highlighting.
-            If omitted, the code will be unstyled.
-
-        Example
-        -------
-        >>> code = '''def hello():
-        ...     print("Hello, Streamlit!")'''
-        >>> st.code(code, language='python')
-
-        .. output::
-           https://share.streamlit.io/0.27.0-kBtt/index.html?id=VDRnaCEZWSBCNUd5gNQZv2
-           height: 100px
-
-        """
-        markdown = "```%(language)s\n%(body)s\n```" % {
-            "language": language or "",
-            "body": body,
-        }
-        element.markdown.body = _clean_text(markdown)
-
-    @_with_element
     def json(self, element, body):
         """Display object or string as a pretty-printed JSON string.
 
@@ -802,69 +705,6 @@ class Container(object):
             if isinstance(body, string_types)  # noqa: F821
             else json.dumps(body, default=lambda o: str(type(o)))
         )
-
-    @_with_element
-    def title(self, element, body):
-        """Display text in title formatting.
-
-        Each document should have a single `st.title()`, although this is not
-        enforced.
-
-        Parameters
-        ----------
-        body : str
-            The text to display.
-
-        Example
-        -------
-        >>> st.title('This is a title')
-
-        .. output::
-           https://share.streamlit.io/0.25.0-2JkNY/index.html?id=SFcBGANWd8kWXF28XnaEZj
-           height: 100px
-
-        """
-        element.markdown.body = "# %s" % _clean_text(body)
-
-    @_with_element
-    def header(self, element, body):
-        """Display text in header formatting.
-
-        Parameters
-        ----------
-        body : str
-            The text to display.
-
-        Example
-        -------
-        >>> st.header('This is a header')
-
-        .. output::
-           https://share.streamlit.io/0.25.0-2JkNY/index.html?id=AnfQVFgSCQtGv6yMUMUYjj
-           height: 100px
-
-        """
-        element.markdown.body = "## %s" % _clean_text(body)
-
-    @_with_element
-    def subheader(self, element, body):
-        """Display text in subheader formatting.
-
-        Parameters
-        ----------
-        body : str
-            The text to display.
-
-        Example
-        -------
-        >>> st.subheader('This is a subheader')
-
-        .. output::
-           https://share.streamlit.io/0.25.0-2JkNY/index.html?id=LBKJTfFUwudrbWENSHV6cJ
-           height: 100px
-
-        """
-        element.markdown.body = "### %s" % _clean_text(body)
 
     @_with_element
     def error(self, element, body):
@@ -1045,96 +885,6 @@ class Container(object):
         return self._enqueue_element(
             set_data_frame, "dataframe", element_width=width, element_height=height
         )
-
-    @_with_element
-    def line_chart(
-        self, element, data=None, width=0, height=0, use_container_width=True
-    ):
-        """Display a line chart.
-
-        This is just syntax-sugar around st.altair_chart. The main difference
-        is this command uses the data's own column and indices to figure out
-        the chart's spec. As a result this is easier to use for many "just plot
-        this" scenarios, while being less customizable.
-
-        Parameters
-        ----------
-        data : pandas.DataFrame, pandas.Styler, numpy.ndarray, Iterable, dict
-            or None
-            Data to be plotted.
-
-        width : int
-            The chart width in pixels. If 0, selects the width automatically.
-
-        height : int
-            The chart width in pixels. If 0, selects the height automatically.
-
-        use_container_width : bool
-            If True, set the chart width to the column width. This takes
-            precedence over the width argument.
-
-        Example
-        -------
-        >>> chart_data = pd.DataFrame(
-        ...     np.random.randn(20, 3),
-        ...     columns=['a', 'b', 'c'])
-        ...
-        >>> st.line_chart(chart_data)
-
-        .. output::
-           https://share.streamlit.io/0.50.0-td2L/index.html?id=BdxXG3MmrVBfJyqS2R2ki8
-           height: 220px
-
-        """
-
-        import streamlit.elements.altair as altair
-
-        chart = altair.generate_chart("line", data, width, height)
-        altair.marshall(element.vega_lite_chart, chart, use_container_width)
-
-    @_with_element
-    def bar_chart(
-        self, element, data=None, width=0, height=0, use_container_width=True
-    ):
-        """Display a bar chart.
-
-        This is just syntax-sugar around st.altair_chart. The main difference
-        is this command uses the data's own column and indices to figure out
-        the chart's spec. As a result this is easier to use for many "just plot
-        this" scenarios, while being less customizable.
-
-        Parameters
-        ----------
-        data : pandas.DataFrame, pandas.Styler, numpy.ndarray, Iterable, or dict
-            Data to be plotted.
-
-        width : int
-            The chart width in pixels. If 0, selects the width automatically.
-
-        height : int
-            The chart width in pixels. If 0, selects the height automatically.
-
-        use_container_width : bool
-            If True, set the chart width to the column width. This takes
-            precedence over the width argument.
-
-        Example
-        -------
-        >>> chart_data = pd.DataFrame(
-        ...     np.random.randn(50, 3),
-        ...     columns=["a", "b", "c"])
-        ...
-        >>> st.bar_chart(chart_data)
-
-        .. output::
-           https://share.streamlit.io/0.50.0-td2L/index.html?id=5U5bjR2b3jFwnJdDfSvuRk
-           height: 220px
-
-        """
-        import streamlit.elements.altair as altair
-
-        chart = altair.generate_chart("bar", data, width, height)
-        altair.marshall(element.vega_lite_chart, chart, use_container_width)
 
     @_with_element
     def vega_lite_chart(
@@ -2606,27 +2356,6 @@ class Container(object):
             raise StreamlitAPIException(
                 "Progress Value has invalid type: %s" % value_type
             )
-
-    @_with_element
-    def empty(self, element):
-        """Add a placeholder to the app.
-
-        The placeholder can be filled any time by calling methods on the return
-        value.
-
-        Example
-        -------
-        >>> my_placeholder = st.empty()
-        >>>
-        >>> # Now replace the placeholder with some text:
-        >>> my_placeholder.text("Hello world!")
-        >>>
-        >>> # And replace the text with an image:
-        >>> my_placeholder.image(my_image_bytes)
-
-        """
-        # The protobuf needs something to be set
-        element.empty.unused = True
 
     @_with_element
     def map(self, element, data=None, zoom=None):
