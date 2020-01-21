@@ -503,7 +503,7 @@ class Container(object):
 
             def append_string(s):
                 if len(els) and type(els[-1]) is list:
-                    string_list =els[-1]
+                    string_list = els[-1]
                 else:
                     string_list = []
                     els.append(string_list)
@@ -515,7 +515,6 @@ class Container(object):
                     append_string(arg)
                 elif isinstance(arg, framework.Element):
                     els.append(arg)
-                    #self._enqueue_element(arg)
                 elif type(arg).__name__ in _DATAFRAME_LIKE_TYPES:
                     if len(_np.shape(arg)) > 2:
                         els.append(elements.Text(arg))
@@ -552,7 +551,8 @@ class Container(object):
             for i, el in enumerate(els):
                 if type(el) is list:
                     els[i] = elements.Markdown(
-                        " ".join(el), unsafe_allow_html=unsafe_allow_html)
+                        " ".join(el), unsafe_allow_html=unsafe_allow_html
+                    )
 
             out = [self._enqueue_element(el) for el in els]
 
