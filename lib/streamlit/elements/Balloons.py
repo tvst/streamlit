@@ -29,6 +29,7 @@ class Balloons(framework.Element):
     ...then watch your app and get ready for a celebration!
 
     """
+
     def __init__(self):
         super(Balloons, self).__init__()
         self._element.balloons.type = Balloons_pb2.Balloons.DEFAULT

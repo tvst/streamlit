@@ -44,6 +44,7 @@ class Audio(framework.Element):
        height: 400px
 
     """
+
     def __init__(self, data, format="audio/wav", start_time=0):
         # TODO: Provide API to convert raw NumPy arrays to audio file (with
         # proper headers, etc)?

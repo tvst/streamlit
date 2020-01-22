@@ -373,10 +373,20 @@ class Container(object):
         return self.write(elements.Info(body))
 
     def image(
-            self, image, caption=None, width=None, use_column_width=False,
-            clamp=False, channels="RGB", format="JPEG"):
-        return self.write(elements.Image(
-            image, caption, width, use_column_width, clamp, channels, format))
+        self,
+        image,
+        caption=None,
+        width=None,
+        use_column_width=False,
+        clamp=False,
+        channels="RGB",
+        format="JPEG",
+    ):
+        return self.write(
+            elements.Image(
+                image, caption, width, use_column_width, clamp, channels, format
+            )
+        )
 
     def latex(self, body):
         return self.write(elements.Latex(body))
