@@ -39,5 +39,6 @@ class Exception(framework.Element):
         import streamlit.elements.exception_proto as exception_proto
 
         super(Exception, self).__init__()
-        exception_proto.marshall(self._element.exception, exception, exception_traceback)
-
+        exception_proto.marshall(
+            self._element.exception, exception, exception_traceback
+        )
