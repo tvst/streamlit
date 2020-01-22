@@ -1422,7 +1422,11 @@ class Container(object):
 
         ui_value = _get_widget_ui_value("radio", element, user_key=key)
         current_value = ui_value if ui_value is not None else index
-        return options[current_value] if len(options) > 0 else framework.NoValue
+
+        if len(options) == 0 or options[current_value] is None:
+            return NoValue
+
+        return options[current_value]
 
     @_with_element
     def selectbox(self, element, label, options, index=0, format_func=str, key=None):
@@ -1476,7 +1480,11 @@ class Container(object):
 
         ui_value = _get_widget_ui_value("selectbox", element, user_key=key)
         current_value = ui_value if ui_value is not None else index
-        return options[current_value] if len(options) > 0 else framework.NoValue
+
+        if len(options) == 0 or options[current_value] is None:
+            return NoValue
+
+        return options[current_value]
 
     @_with_element
     def slider(
