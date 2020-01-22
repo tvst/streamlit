@@ -27,7 +27,6 @@ setup_2_3_shims(globals())
 import io
 import functools
 import json
-import random
 import textwrap
 import sys
 import types
@@ -47,8 +46,6 @@ from streamlit.errors import DuplicateWidgetID
 from streamlit.errors import StreamlitAPIException
 from streamlit.js_number import JSNumber
 from streamlit.js_number import JSNumberBoundsException
-from streamlit.proto import Alert_pb2
-from streamlit.proto import Balloons_pb2
 from streamlit.proto import BlockPath_pb2
 from streamlit.proto import ForwardMsg_pb2
 from streamlit.proto.NumberInput_pb2 import NumberInput
@@ -351,6 +348,12 @@ class Container(object):
     def area_chart(self, data=None, width=0, height=0, use_container_width=True):
         return self.write(elements.AreaChart(data, width, height, use_container_width))
 
+    def audio(self, data, format="audio/wav", start_time=0):
+        return self.write(elements.Audio(data, format, start_time))
+
+    def balloons(self):
+        return self.write(elements.Balloons())
+
     def bar_chart(self, data=None, width=0, height=0, use_container_width=True):
         return self.write(elements.BarChart(data, width, height, use_container_width))
 
@@ -360,14 +363,20 @@ class Container(object):
     def empty(self):
         return self.write(elements.Empty())
 
-    def markdown(self, body, unsafe_allow_html=False):
-        return self.write(elements.Markdown(body, unsafe_allow_html))
-
-    def title(self, body):
-        return self.write(elements.Title(body))
+    def error(self, body):
+        return self.write(elements.Error(body))
 
     def header(self, body):
         return self.write(elements.Header(body))
+
+    def info(self, body):
+        return self.write(elements.Info(body))
+
+    def image(
+            self, image, caption=None, width=None, use_column_width=False,
+            clamp=False, channels="RGB", format="JPEG"):
+        return self.write(elements.Image(
+            image, caption, width, use_column_width, clamp, channels, format))
 
     def latex(self, body):
         return self.write(elements.Latex(body))
@@ -375,11 +384,26 @@ class Container(object):
     def line_chart(self, data=None, width=0, height=0, use_container_width=True):
         return self.write(elements.LineChart(data, width, height, use_container_width))
 
+    def markdown(self, body, unsafe_allow_html=False):
+        return self.write(elements.Markdown(body, unsafe_allow_html))
+
     def subheader(self, body):
         return self.write(elements.Subheader(body))
 
+    def success(self, body):
+        return self.write(elements.Success(body))
+
     def text(self, body):
         return self.write(elements.Text(body))
+
+    def title(self, body):
+        return self.write(elements.Title(body))
+
+    def video(self, data, format="video/mp4", start_time=0):
+        return self.write(elements.Video(data, format, start_time))
+
+    def warning(self, body):
+        return self.write(elements.Warning(body))
 
     def write(self, *args, **kwargs):
         """Write arguments to the app.
@@ -658,20 +682,6 @@ class Container(object):
         return block_ctr
 
     @_with_element
-    def balloons(self, element):
-        """Draw celebratory balloons.
-
-        Example
-        -------
-        >>> st.balloons()
-
-        ...then watch your app and get ready for a celebration!
-
-        """
-        element.balloons.type = Balloons_pb2.Balloons.DEFAULT
-        element.balloons.execution_id = random.randrange(0xFFFFFFFF)
-
-    @_with_element
     def json(self, element, body):
         """Display object or string as a pretty-printed JSON string.
 
@@ -705,74 +715,6 @@ class Container(object):
             if isinstance(body, string_types)  # noqa: F821
             else json.dumps(body, default=lambda o: str(type(o)))
         )
-
-    @_with_element
-    def error(self, element, body):
-        """Display error message.
-
-        Parameters
-        ----------
-        body : str
-            The error text to display.
-
-        Example
-        -------
-        >>> st.error('This is an error')
-
-        """
-        element.alert.body = _clean_text(body)
-        element.alert.format = Alert_pb2.Alert.ERROR
-
-    @_with_element
-    def warning(self, element, body):
-        """Display warning message.
-
-        Parameters
-        ----------
-        body : str
-            The warning text to display.
-
-        Example
-        -------
-        >>> st.warning('This is a warning')
-
-        """
-        element.alert.body = _clean_text(body)
-        element.alert.format = Alert_pb2.Alert.WARNING
-
-    @_with_element
-    def info(self, element, body):
-        """Display an informational message.
-
-        Parameters
-        ----------
-        body : str
-            The info text to display.
-
-        Example
-        -------
-        >>> st.info('This is a purely informational message')
-
-        """
-        element.alert.body = _clean_text(body)
-        element.alert.format = Alert_pb2.Alert.INFO
-
-    @_with_element
-    def success(self, element, body):
-        """Display a success message.
-
-        Parameters
-        ----------
-        body : str
-            The success text to display.
-
-        Example
-        -------
-        >>> st.success('This is a success message!')
-
-        """
-        element.alert.body = _clean_text(body)
-        element.alert.format = Alert_pb2.Alert.SUCCESS
 
     @_with_element
     def help(self, element, obj):
@@ -1270,148 +1212,6 @@ class Container(object):
         import streamlit.elements.bokeh_chart as bokeh_chart
 
         bokeh_chart.marshall(element.bokeh_chart, figure, use_container_width)
-
-    # TODO: Make this accept files and strings/bytes as input.
-    @_with_element
-    def image(
-        self,
-        element,
-        image,
-        caption=None,
-        width=None,
-        use_column_width=False,
-        clamp=False,
-        channels="RGB",
-        format="JPEG",
-    ):
-        """Display an image or list of images.
-
-        Parameters
-        ----------
-        image : numpy.ndarray, [numpy.ndarray], BytesIO, str, or [str]
-            Monochrome image of shape (w,h) or (w,h,1)
-            OR a color image of shape (w,h,3)
-            OR an RGBA image of shape (w,h,4)
-            OR a URL to fetch the image from
-            OR a list of one of the above, to display multiple images.
-        caption : str or list of str
-            Image caption. If displaying multiple images, caption should be a
-            list of captions (one for each image).
-        width : int or None
-            Image width. None means use the image width.
-        use_column_width : bool
-            If True, set the image width to the column width. This takes
-            precedence over the `width` parameter.
-        clamp : bool
-            Clamp image pixel values to a valid range ([0-255] per channel).
-            This is only meaningful for byte array images; the parameter is
-            ignored for image URLs. If this is not set, and an image has an
-            out-of-range value, an error will be thrown.
-        channels : 'RGB' or 'BGR'
-            If image is an nd.array, this parameter denotes the format used to
-            represent color information. Defaults to 'RGB', meaning
-            `image[:, :, 0]` is the red channel, `image[:, :, 1]` is green, and
-            `image[:, :, 2]` is blue. For images coming from libraries like
-            OpenCV you should set this to 'BGR', instead.
-        format : 'JPEG' or 'PNG'
-            This parameter specifies the image format to use when transferring
-            the image data. Defaults to 'JPEG'.
-
-        Example
-        -------
-        >>> from PIL import Image
-        >>> image = Image.open('sunrise.jpg')
-        >>>
-        >>> st.image(image, caption='Sunrise by the mountains',
-        ...          use_column_width=True)
-
-        .. output::
-           https://share.streamlit.io/0.25.0-2JkNY/index.html?id=YCFaqPgmgpEz7jwE4tHAzY
-           height: 630px
-
-        """
-        import streamlit.elements.image_proto as image_proto
-
-        if use_column_width:
-            width = -2
-        elif width is None:
-            width = -1
-        elif width <= 0:
-            raise StreamlitAPIException("Image width must be positive.")
-        image_proto.marshall_images(
-            image, caption, width, element.imgs, clamp, channels, format
-        )
-
-    @_with_element
-    def audio(self, element, data, format="audio/wav", start_time=0):
-        """Display an audio player.
-
-        Parameters
-        ----------
-        data : str, bytes, BytesIO, numpy.ndarray, or file opened with
-                io.open().
-            Raw audio data or a string with a URL pointing to the file to load.
-            If passing the raw data, this must include headers and any other bytes
-            required in the actual file.
-        start_time: int
-            The time from which this element should start playing.
-        format : str
-            The mime type for the audio file. Defaults to 'audio/wav'.
-            See https://tools.ietf.org/html/rfc4281 for more info.
-
-        Example
-        -------
-        >>> audio_file = open('myaudio.ogg', 'rb')
-        >>> audio_bytes = audio_file.read()
-        >>>
-        >>> st.audio(audio_bytes, format='audio/ogg')
-
-        .. output::
-           https://share.streamlit.io/0.25.0-2JkNY/index.html?id=Dv3M9sA7Cg8gwusgnVNTHb
-           height: 400px
-
-        """
-        # TODO: Provide API to convert raw NumPy arrays to audio file (with
-        # proper headers, etc)?
-        from .elements import media_proto
-
-        media_proto.marshall_audio(element.audio, data, format, start_time)
-
-    @_with_element
-    def video(self, element, data, format="video/mp4", start_time=0):
-        """Display a video player.
-
-        Parameters
-        ----------
-        data : str, bytes, BytesIO, numpy.ndarray, or file opened with
-                io.open().
-            Raw video data or a string with a URL pointing to the video
-            to load. Includes support for YouTube URLs.
-            If passing the raw data, this must include headers and any other
-            bytes required in the actual file.
-        format : str
-            The mime type for the video file. Defaults to 'video/mp4'.
-            See https://tools.ietf.org/html/rfc4281 for more info.
-        start_time: int
-            The time from which this element should start playing.
-
-        Example
-        -------
-        >>> video_file = open('myvideo.mp4', 'rb')
-        >>> video_bytes = video_file.read()
-        >>>
-        >>> st.video(video_bytes)
-
-        .. output::
-           https://share.streamlit.io/0.25.0-2JkNY/index.html?id=Wba9sZELKfKwXH4nDCCbMv
-           height: 600px
-
-        """
-        # TODO: Provide API to convert raw NumPy arrays to video file (with
-        # proper headers, etc)?
-        from .elements import media_proto
-
-        media_proto.marshall_video(element.video, data, format, start_time)
 
     @_with_element
     def button(self, element, label, key=None):

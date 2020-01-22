@@ -157,30 +157,30 @@ main = _Container(container="main")
 # Main methods:
 altair_chart = main.altair_chart  # noqa: E221
 area_chart = main.area_chart  # noqa: E221
+audio = main.audio  # noqa: E221
 bar_chart = main.bar_chart  # noqa: E221
 code = main.code  # noqa: E221
 empty = main.empty  # noqa: E221
+error = main.error  # noqa: E221
 header = main.header  # noqa: E221
+image = main.image  # noqa: E221
+info = main.info  # noqa: E221
 latex = main.latex  # noqa: E221
 line_chart = main.line_chart  # noqa: E221
 markdown = main.markdown  # noqa: E221
 subheader = main.subheader  # noqa: E221
+success = main.success  # noqa: E221
 text = main.text  # noqa: E221
 title = main.title  # noqa: E221
+video = main.video  # noda: E221
+warning = main.warning  # noqa: E221
 write = main.write  # noqa: E221
-# vega_lite_chart
-# warning
-# success
-# error
-# info
-# audio
-# video
-# image
+balloons = main.balloons  # noqa: E221
 # exception
-# balloons
 # progress
 # json
 # help
+# vega_lite_chart
 
 # text_input
 # text_area

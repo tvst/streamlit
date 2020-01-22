@@ -13,23 +13,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .AltairChart import AltairChart
-from .AreaChart import AreaChart
-from .Audio import Audio
-from .Balloons import Balloons
-from .BarChart import BarChart
-from .Code import Code
-from .Empty import Empty
-from .Error import Error
-from .Header import Header
-from .Image import Image
-from .Info import Info
-from .Latex import Latex
-from .LineChart import LineChart
-from .Markdown import Markdown
-from .Subheader import Subheader
-from .Success import Success
-from .Text import Text
-from .Title import Title
-from .Video import Video
-from .Warning import Warning
+from streamlit.elements import framework
+from streamlit.proto import Alert_pb2
+from streamlit.string_util import clean_text
+
+
+class Warning(framework.Element):
+    """Display warning message.
+
+    Parameters
+    ----------
+    body : str
+        The warning text to display.
+
+    Example
+    -------
+    >>> st.warning('This is a warning')
+
+    """
+
+    def __init__(self, body):
+        super(Warning, self).__init__()
+        self._element.alert.body = clean_text(body)
+        self._element.alert.format = Alert_pb2.Alert.WARNING

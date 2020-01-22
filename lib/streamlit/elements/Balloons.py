@@ -13,23 +13,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .AltairChart import AltairChart
-from .AreaChart import AreaChart
-from .Audio import Audio
-from .Balloons import Balloons
-from .BarChart import BarChart
-from .Code import Code
-from .Empty import Empty
-from .Error import Error
-from .Header import Header
-from .Image import Image
-from .Info import Info
-from .Latex import Latex
-from .LineChart import LineChart
-from .Markdown import Markdown
-from .Subheader import Subheader
-from .Success import Success
-from .Text import Text
-from .Title import Title
-from .Video import Video
-from .Warning import Warning
+import random
+
+from streamlit.elements import framework
+from streamlit.proto import Balloons_pb2
+
+
+class Balloons(framework.Element):
+    """Draw celebratory balloons.
+
+    Example
+    -------
+    >>> st.balloons()
+
+    ...then watch your app and get ready for a celebration!
+
+    """
+    def __init__(self):
+        super(Balloons, self).__init__()
+        self._element.balloons.type = Balloons_pb2.Balloons.DEFAULT
+        self._element.balloons.execution_id = random.randrange(0xFFFFFFFF)
