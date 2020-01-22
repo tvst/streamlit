@@ -176,10 +176,10 @@ video = main.video  # noda: E221
 warning = main.warning  # noqa: E221
 write = main.write  # noqa: E221
 balloons = main.balloons  # noqa: E221
-# exception
-# progress
-# json
-# help
+progress = main.progress  # noqa: E221
+json = main.json  # noqa: E221
+exception = main.exception  # noqa: E221
+help = main.help  # noqa: E221
 # vega_lite_chart
 
 # text_input

@@ -21,12 +21,16 @@ from .BarChart import BarChart
 from .Code import Code
 from .Empty import Empty
 from .Error import Error
+from .Exception import Exception
 from .Header import Header
+from .Help import Help
 from .Image import Image
 from .Info import Info
+from .Json import Json
 from .Latex import Latex
 from .LineChart import LineChart
 from .Markdown import Markdown
+from .Progress import Progress
 from .Subheader import Subheader
 from .Success import Success
 from .Text import Text

@@ -366,8 +366,14 @@ class Container(object):
     def error(self, body):
         return self.write(elements.Error(body))
 
+    def exception(self, exception, exception_traceback=None):
+        return self.write(elements.Exception(exception, exception_traceback))
+
     def header(self, body):
         return self.write(elements.Header(body))
+
+    def help(self, obj):
+        return self.write(elements.Help(obj))
 
     def info(self, body):
         return self.write(elements.Info(body))
@@ -388,6 +394,9 @@ class Container(object):
             )
         )
 
+    def json(self, body):
+        return self.write(elements.Json(body))
+
     def latex(self, body):
         return self.write(elements.Latex(body))
 
@@ -396,6 +405,9 @@ class Container(object):
 
     def markdown(self, body, unsafe_allow_html=False):
         return self.write(elements.Markdown(body, unsafe_allow_html))
+
+    def progress(self, value):
+        return self.write(elements.Progress(value))
 
     def subheader(self, body):
         return self.write(elements.Subheader(body))
@@ -690,93 +702,6 @@ class Container(object):
         _enqueue_message(msg)
 
         return block_ctr
-
-    @_with_element
-    def json(self, element, body):
-        """Display object or string as a pretty-printed JSON string.
-
-        Parameters
-        ----------
-        body : Object or str
-            The object to print as JSON. All referenced objects should be
-            serializable to JSON as well. If object is a string, we assume it
-            contains serialized JSON.
-
-        Example
-        -------
-        >>> st.json({
-        ...     'foo': 'bar',
-        ...     'baz': 'boz',
-        ...     'stuff': [
-        ...         'stuff 1',
-        ...         'stuff 2',
-        ...         'stuff 3',
-        ...         'stuff 5',
-        ...     ],
-        ... })
-
-        .. output::
-           https://share.streamlit.io/0.25.0-2JkNY/index.html?id=CTFkMQd89hw3yZbZ4AUymS
-           height: 280px
-
-        """
-        element.json.body = (
-            body
-            if isinstance(body, string_types)  # noqa: F821
-            else json.dumps(body, default=lambda o: str(type(o)))
-        )
-
-    @_with_element
-    def help(self, element, obj):
-        """Display object's doc string, nicely formatted.
-
-        Displays the doc string for this object.
-
-        Parameters
-        ----------
-        obj : Object
-            The object whose docstring should be displayed.
-
-        Example
-        -------
-
-        Don't remember how to initialize a dataframe? Try this:
-
-        >>> st.help(pandas.DataFrame)
-
-        Want to quickly check what datatype is output by a certain function?
-        Try:
-
-        >>> x = my_poorly_documented_function()
-        >>> st.help(x)
-
-        """
-        import streamlit.elements.doc_string as doc_string
-
-        doc_string.marshall(element, obj)
-
-    @_with_element
-    def exception(self, element, exception, exception_traceback=None):
-        """Display an exception.
-
-        Parameters
-        ----------
-        exception : Exception
-            The exception to display.
-        exception_traceback : Exception Traceback or None
-            If None or False, does not show display the trace. If True,
-            tries to capture a trace automatically. If a Traceback object,
-            displays the given traceback.
-
-        Example
-        -------
-        >>> e = RuntimeError('This is an exception of type RuntimeError')
-        >>> st.exception(e)
-
-        """
-        import streamlit.elements.exception_proto as exception_proto
-
-        exception_proto.marshall(element.exception, exception, exception_traceback)
 
     @_remove_self_from_sig
     def dataframe(self, data=None, width=None, height=None):
@@ -2132,48 +2057,6 @@ class Container(object):
         ui_value = _get_widget_ui_value("number_input", element, user_key=key)
 
         return ui_value if ui_value is not None else value
-
-    @_with_element
-    def progress(self, element, value):
-        """Display a progress bar.
-
-        Parameters
-        ----------
-        value : int
-            The percentage complete: 0 <= value <= 100
-
-        Example
-        -------
-        Here is an example of a progress bar increasing over time:
-
-        >>> import time
-        >>>
-        >>> my_bar = st.progress(0)
-        >>>
-        >>> for percent_complete in range(100):
-        ...     my_bar.progress(percent_complete + 1)
-
-        """
-        # Needed for python 2/3 compatibility
-        value_type = type(value).__name__
-        if value_type == "float":
-            if 0.0 <= value <= 1.0:
-                element.progress.value = int(value * 100)
-            else:
-                raise StreamlitAPIException(
-                    "Progress Value has invalid value [0.0, 1.0]: %f" % value
-                )
-        elif value_type == "int":
-            if 0 <= value <= 100:
-                element.progress.value = value
-            else:
-                raise StreamlitAPIException(
-                    "Progress Value has invalid value [0, 100]: %d" % value
-                )
-        else:
-            raise StreamlitAPIException(
-                "Progress Value has invalid type: %s" % value_type
-            )
 
     @_with_element
     def map(self, element, data=None, zoom=None):
