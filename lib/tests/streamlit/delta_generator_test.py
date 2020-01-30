@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Container Unittest."""
+
 # Python 2/3 compatibility
 from __future__ import absolute_import
 from __future__ import division
@@ -37,14 +39,16 @@ from parameterized import parameterized
 
 import pandas as pd
 
+from streamlit.Container import Container
 from streamlit.Container import _build_duplicate_widget_message
+from streamlit.cursor import LockedCursor
 from streamlit.errors import DuplicateWidgetID
 from streamlit.errors import StreamlitAPIException
-from streamlit.proto.Element_pb2 import Element
-from streamlit.proto.TextInput_pb2 import TextInput
-from streamlit.proto.TextArea_pb2 import TextArea
-from streamlit.proto.Delta_pb2 import Delta
 from streamlit.proto.BlockPath_pb2 import BlockPath
+from streamlit.proto.Delta_pb2 import Delta
+from streamlit.proto.Element_pb2 import Element
+from streamlit.proto.TextArea_pb2 import TextArea
+from streamlit.proto.TextInput_pb2 import TextInput
 from streamlit.Container import (
     _wraps_with_cleaned_sig,
     _remove_self_from_sig,
@@ -75,7 +79,7 @@ class FakeContainer(object):
 
         def wrapper(*args, **kwargs):
             if name in streamlit_methods:
-                if self._container == BlockPath.SIDEBAR:
+                if self._container == "sidebar":
                     message = (
                         "Method `%(name)s()` does not exist for "
                         "`st.sidebar`. Did you mean `st.%(name)s()`?" % {"name": name}
@@ -153,8 +157,8 @@ class ContainerTest(testutil.ContainerTestCase):
 
         self.assertEqual(
             str(ctx.exception),
-            "Method `write()` does not exist for `Container`"
-            " objects. Did you mean `st.write()`?",
+            "Method `write()` does not exist for `st.sidebar`. "
+            "Did you mean `st.write()`?",
         )
 
     def test_wraps_with_cleaned_sig(self):
@@ -162,7 +166,7 @@ class ContainerTest(testutil.ContainerTestCase):
         wrapped = wrapped_function.keywords.get("wrapped")
 
         # Check meta data.
-        self.assertEqual("container_test", wrapped.__module__)
+        self.assertEqual("delta_generator_test", wrapped.__module__)
         self.assertEqual("fake_text", wrapped.__name__)
         self.assertEqual("Fake text delta generator.", wrapped.__doc__)
 
@@ -261,31 +265,30 @@ class ContainerTest(testutil.ContainerTestCase):
 class ContainerClassTest(testutil.ContainerTestCase):
     """Test Container Class."""
 
-    def setUp(self):
-        super(ContainerClassTest, self).setUp(override_root=False)
-
     def test_constructor(self):
         """Test default Container()."""
-        ctr = self.new_container()
-        self.assertTrue(ctr._is_root)
-        self.assertEqual(ctr._id, 0)
+        ctr = Container()
+        self.assertFalse(ctr._cursor.is_locked)
+        self.assertEqual(ctr._cursor.index, 0)
 
     def test_constructor_with_id(self):
         """Test Container() with an id."""
-        ctr = self.new_container(id=1234, is_root=False)
-        self.assertFalse(ctr._is_root)
-        self.assertEqual(ctr._id, 1234)
+        cursor = LockedCursor(index=1234)
+        ctr = Container(cursor=cursor)
+        self.assertTrue(ctr._cursor.is_locked)
+        self.assertEqual(ctr._cursor.index, 1234)
 
     def test_enqueue_new_element_delta_null(self):
         # Test "Null" Delta generators
-        ctr = self.new_container(None)
-        new_ctr = ctr._enqueue_new_element_delta(None, None)
+        ctr = Container(container=None)
+        enqueue_fn = lambda x: None
+        new_ctr = ctr._enqueue_new_element_delta(enqueue_fn, None)
         self.assertEqual(ctr, new_ctr)
 
     @parameterized.expand([(BlockPath.MAIN,), (BlockPath.SIDEBAR,)])
     def test_enqueue_new_element_delta(self, container):
-        ctr = self.new_container(container=container)
-        self.assertEqual(0, ctr._id)
+        ctr = Container(container=container)
+        self.assertEqual(0, ctr._cursor.index)
         self.assertEqual(container, ctr._container)
 
         test_data = "some test data"
@@ -297,17 +300,18 @@ class ContainerClassTest(testutil.ContainerTestCase):
         def marshall_element(element):
             fake_ctr.fake_text(element, test_data)
 
-        new_ctr = ctr._enqueue_new_element_delta(marshall_element, "fake")
+        new_ctr = ctr._enqueue_new_element_delta(marshall_element, None)
         self.assertNotEqual(ctr, new_ctr)
-        self.assertEqual(1, ctr._id)
+        self.assertEqual(1, ctr._cursor.index)
         self.assertEqual(container, new_ctr._container)
 
         element = self.get_delta_from_queue().new_element
         self.assertEqual(element.text.body, test_data)
 
     def test_enqueue_new_element_delta_same_id(self):
-        ctr = self.new_container(id=123, is_root=False)
-        self.assertEqual(123, ctr._id)
+        cursor = LockedCursor(index=123)
+        ctr = Container(cursor=cursor)
+        self.assertEqual(123, ctr._cursor.index)
 
         test_data = "some test data"
         # Use FakeContainer.fake_text cause if we use
@@ -318,8 +322,8 @@ class ContainerClassTest(testutil.ContainerTestCase):
         def marshall_element(element):
             fake_ctr.fake_text(element, test_data)
 
-        new_ctr = ctr._enqueue_new_element_delta(marshall_element, "fake")
-        self.assertEqual(ctr, new_ctr)
+        new_ctr = ctr._enqueue_new_element_delta(marshall_element, None)
+        self.assertEqual(ctr._cursor, new_ctr._cursor)
 
         msg = self.get_message_from_queue()
         self.assertEqual(123, msg.metadata.delta_id)
@@ -494,7 +498,7 @@ class ContainerChartTest(testutil.ContainerTestCase):
         self.assertEqual(element.datasets[0].data.data.cols[2].int64s.data[0], 20)
 
 
-class WidgetIdText(unittest.TestCase):
+class WidgetIdText(testutil.ContainerTestCase):
     def test_ids_are_equal_when_proto_is_equal(self):
         text_input1 = TextInput()
         text_input1.label = "Label #1"
@@ -511,9 +515,9 @@ class WidgetIdText(unittest.TestCase):
         element2.text_input.CopyFrom(text_input2)
 
         _set_widget_id("text_input", element1)
-        _set_widget_id("text_input", element2)
 
-        self.assertEqual(element1.text_input.id, element2.text_input.id)
+        with self.assertRaises(DuplicateWidgetID):
+            _set_widget_id("text_input", element2)
 
     def test_ids_are_diff_when_labels_are_diff(self):
         text_input1 = TextInput()
@@ -571,9 +575,9 @@ class WidgetIdText(unittest.TestCase):
         element2.text_input.CopyFrom(text_input2)
 
         _set_widget_id("text_input", element1, user_key="some_key")
-        _set_widget_id("text_input", element2, user_key="some_key")
 
-        self.assertEqual(element1.text_input.id, element2.text_input.id)
+        with self.assertRaises(DuplicateWidgetID):
+            _set_widget_id("text_input", element2, user_key="some_key")
 
     def test_ids_are_diff_when_keys_are_diff(self):
         text_input1 = TextInput()

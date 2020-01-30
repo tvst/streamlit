@@ -1,11 +1,27 @@
+/**
+ * @license
+ * Copyright 2018-2020 Streamlit Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import CodeBlock from "components/elements/CodeBlock"
 import React, { ReactElement, ReactNode } from "react"
 import ReactMarkdown from "react-markdown"
-
 // @ts-ignore
 import htmlParser from "react-markdown/plugins/html-parser"
 // @ts-ignore
-import { InlineMath, BlockMath } from "react-katex"
+import { BlockMath, InlineMath } from "react-katex"
 // @ts-ignore
 import RemarkMathPlugin from "remark-math"
 // @ts-ignore
@@ -31,7 +47,19 @@ export interface Props {
  * renderers and AST plugins (for syntax highlighting, HTML support, etc).
  */
 export class StreamlitMarkdown extends React.PureComponent<Props> {
+  componentDidCatch(): void {
+    const { source } = this.props
+
+    throw {
+      name: "Error parsing Markdown or HTML in this string",
+      message: <p>{source}</p>,
+      stack: null,
+    }
+  }
+
   public render(): ReactNode {
+    const { source, allowHTML } = this.props
+
     const renderers = {
       code: CodeBlock,
       link: linkWithTargetBlank,
@@ -44,12 +72,12 @@ export class StreamlitMarkdown extends React.PureComponent<Props> {
 
     const plugins = [RemarkMathPlugin, RemarkEmoji]
 
-    const astPlugins = this.props.allowHTML ? [htmlParser()] : []
+    const astPlugins = allowHTML ? [htmlParser()] : []
 
     return (
       <ReactMarkdown
-        source={this.props.source}
-        escapeHtml={!this.props.allowHTML}
+        source={source}
+        escapeHtml={!allowHTML}
         astPlugins={astPlugins}
         plugins={plugins}
         renderers={renderers}

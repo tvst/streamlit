@@ -60,7 +60,7 @@ else:
 class ScriptRunnerTest(unittest.TestCase):
     def test_startup_shutdown(self):
         """Test that we can create and shut down a ScriptRunner."""
-        scriptrunner = TestScriptRunner("good_script.py")
+        scriptrunner = TestScriptRunner("good_script.py.no_lint")
         scriptrunner.start()
         scriptrunner.join()
 
@@ -104,7 +104,7 @@ class ScriptRunnerTest(unittest.TestCase):
 
     def test_compile_error(self):
         """Tests that we get an exception event when a script can't compile."""
-        scriptrunner = TestScriptRunner("compile_error.py.no_lint")
+        scriptrunner = TestScriptRunner("compile_error.py")
         scriptrunner.enqueue_rerun()
         scriptrunner.start()
         scriptrunner.join()
@@ -389,14 +389,15 @@ class TestScriptRunner(ScriptRunner):
         def enqueue_fn(msg):
             self.report_queue.enqueue(msg)
             self.maybe_handle_execution_control_request()
-            return True
 
         self.script_request_queue = ScriptRequestQueue()
-
         script_path = os.path.join(os.path.dirname(__file__), "test_data", script_name)
 
+        report = Report(script_path, "test command line")
+        report.enqueue = enqueue_fn
+
         super(TestScriptRunner, self).__init__(
-            report=Report(script_path, "test command line"),
+            report=report,
             widget_states=WidgetStates(),
             request_queue=self.script_request_queue,
         )
@@ -439,6 +440,10 @@ class TestScriptRunner(ScriptRunner):
             super(TestScriptRunner, self)._process_request_queue()
         except BaseException as e:
             self.script_thread_exceptions.append(e)
+
+    def _run_script(self, rerun_data):
+        self.report_queue.clear()
+        super(TestScriptRunner, self)._run_script(rerun_data)
 
     def join(self):
         """Joins the run thread, if it was started"""

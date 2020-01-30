@@ -85,6 +85,7 @@ class ReportSession(object):
         self._state = ReportSessionState.REPORT_NOT_RUNNING
 
         self._uploaded_file_mgr = UploadedFileManager()
+
         self._widget_states = WidgetStates()
         self._local_sources_watcher = LocalSourcesWatcher(
             self._report, self._on_source_file_changed

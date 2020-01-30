@@ -19,6 +19,9 @@ from streamlit.ReportThread import get_report_ctx
 def get_container_cursor(container):
     ctx = get_report_ctx()
 
+    if ctx is None:
+        return None
+
     if container in ctx.cursors:
         return ctx.cursors[container]
 
@@ -28,6 +31,12 @@ def get_container_cursor(container):
 
 
 class AbstractCursor(object):
+    """A pointer to a location in the app.
+
+    When adding an element to the app, you should always call
+    get_locked_cursor() on that element's respective AbstractCursor.
+    """
+
     @property
     def index(self):
         return self._index
@@ -40,13 +49,16 @@ class AbstractCursor(object):
     def is_locked(self):
         return self._is_locked
 
-    def get_locked_cursor(self, element):
+    def get_locked_cursor(self, element, **props):
         raise NotImplementedError()
 
 
 class RunningCursor(AbstractCursor):
     def __init__(self, path=()):
-        """A pointer to a location in the app.
+        """A moving pointer to a location in the app.
+
+        RunningCursors auto-increment to the next available location when you
+        call get_locked_cursor() on them.
 
         Parameters
         ----------
@@ -59,10 +71,9 @@ class RunningCursor(AbstractCursor):
         self._index = 0
         self._path = path
 
-    def get_locked_cursor(self, element):
+    def get_locked_cursor(self, element, **props):
         locked_cursor = LockedCursor(
-            path=self._path, index=self._index, element=element,
-        )
+            path=self._path, index=self._index, element=element, **props)
 
         self._index += 1
 
@@ -70,8 +81,11 @@ class RunningCursor(AbstractCursor):
 
 
 class LockedCursor(AbstractCursor):
-    def __init__(self, path=(), index=None, element=None):
-        """A pointer to a location in the app.
+    def __init__(self, path=(), index=None, element=None, **props):
+        """A locked pointer to a location in the app.
+
+        LockedCursors always point to the same location, even when you call
+        get_locked_cursor() on them.
 
         Parameters
         ----------
@@ -80,13 +94,19 @@ class LockedCursor(AbstractCursor):
           0th item is the topmost ancestor.
         index: int or None
         element: Element or None
+        **props: any
+          Anything else you want to store in this cursor. This is a temporary
+          measure that will go away when we implement improved return values
+          for elements.
 
         """
         self._is_locked = True
         self._index = index
         self._path = path
-        self.element = element
+        self.element = element  # XXX Decide on either element or props
+        self.props = props
 
-    def get_locked_cursor(self, element):
+    def get_locked_cursor(self, element, **props):
         self.element = element
+        self.props = props
         return self

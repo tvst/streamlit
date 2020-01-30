@@ -109,16 +109,17 @@ import traceback as _traceback
 import json as _json
 import numpy as _np
 
-from streamlit.util import functools_wraps as _functools_wraps
 from streamlit import code_util as _code_util
 from streamlit import env_util as _env_util
+from streamlit import source_util as _source_util
 from streamlit import string_util as _string_util
 from streamlit import type_util as _type_util
-from streamlit import source_util as _source_util
-from streamlit.ReportThread import get_report_ctx as _get_report_ctx
-from streamlit.ReportThread import add_report_ctx as _add_report_ctx
 from streamlit.Container import Container as _Container
+from streamlit.ReportThread import add_report_ctx as _add_report_ctx
+from streamlit.ReportThread import get_report_ctx as _get_report_ctx
 from streamlit.errors import StreamlitAPIException
+from streamlit.proto import BlockPath_pb2 as _BlockPath_pb2
+from streamlit.util import functools_wraps as _functools_wraps
 
 # Modules that the user should have access to.
 from streamlit.caching import cache  # noqa: F401
@@ -140,21 +141,9 @@ def _set_log_level():
 # in an alternative config.
 _config.on_config_parsed(_set_log_level)
 
-
-# XXX REMOVE
-def _with_ctr(method):
-    return method
-
-
-def _reset():
-    _get_report_ctx().widget_ids_this_run.clear()
-
-
-# Sidebar
 sidebar = _Container(container="sidebar")
 main = _Container(container="main")
 
-# Main methods:
 altair_chart = main.altair_chart  # noqa: E221
 area_chart = main.area_chart  # noqa: E221
 audio = main.audio  # noqa: E221
@@ -206,8 +195,6 @@ help = main.help  # noqa: E221
 # map = _with_ctr(_Container.map)  # noqa: E221
 # plotly_chart = _with_ctr(_Container.plotly_chart)  # noqa: E221
 # pyplot = _with_ctr(_Container.pyplot)  # noqa: E221
-
-# Config
 
 get_option = _config.get_option
 

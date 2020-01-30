@@ -17,10 +17,7 @@
 
 # Python 2/3 compatibility
 from __future__ import print_function, division, unicode_literals, absolute_import
-from streamlit.compatibility import (
-    setup_2_3_shims as setup_2_3_shims,
-    is_running_py3 as is_running_py3,
-)
+from streamlit.compatibility import setup_2_3_shims
 
 setup_2_3_shims(globals())
 
@@ -39,11 +36,13 @@ from streamlit import cursor
 from streamlit import caching
 from streamlit import config
 from streamlit import elements
+from streamlit import cursor
 from streamlit import metrics
 from streamlit import type_util
 from streamlit.ReportThread import get_report_ctx
 from streamlit.errors import DuplicateWidgetID
 from streamlit.errors import StreamlitAPIException
+from streamlit.errors import NoSessionContext
 from streamlit.js_number import JSNumber
 from streamlit.js_number import JSNumberBoundsException
 from streamlit.proto import BlockPath_pb2
@@ -277,7 +276,7 @@ class Container(object):
 
     Parameters
     ----------
-    container: "main" or "sidebar" or None
+    container: BlockPath_pb2.BlockPath or None
       The root container for this Container. If None, this is a null
       Container which doesn't print to the app at all (useful for
       testing).
@@ -288,7 +287,7 @@ class Container(object):
     # The pydoc below is for user consumption, so it doesn't talk about
     # Container constructor parameters (which users should never use). For
     # those, see above.
-    def __init__(self, container="main", cursor=None):
+    def __init__(self, container=BlockPath_pb2.BlockPath.MAIN, cursor=None):
         """Inserts or updates elements in Streamlit apps.
 
         As a user, you should never initialize this object by hand. Instead,
@@ -305,9 +304,19 @@ class Container(object):
         """
         self._container = container  # TODO: Rename to "name"
 
-        # Root Containers don't have a self._cursor, since it lives inside
-        # the ReportContext object, which is stored at the thread level.
-        self._cursor = cursor
+        # This is either:
+        # - None: if this is the running Container for a top-level
+        #   container.
+        # - RunningCursor: if this is the running Container for a
+        #   non-top-level container (created with ctx._block())
+        # - LockedCursor: if this is a locked Container returned by some
+        #   other Container method. E.g. the ctx returned in ctx =
+        #   st.text("foo").
+        #
+        # You should never use this! Instead use self._cursor, which is a
+        # computed property that fetches the right cursor.
+        #
+        self._provided_cursor = cursor
 
     def __getattr__(self, name):
         import streamlit as st
@@ -339,6 +348,13 @@ class Container(object):
         return wrapper
 
     # XXX TODO Write macro to copy docstrings.
+
+    @property
+    def _cursor(self):
+        if self._provided_cursor is None:
+            return cursor.get_container_cursor(self._container)
+        else:
+            return self._provided_cursor
 
     def altair_chart(self, altair_chart, width=0, use_container_width=False):
         return self.write(
@@ -617,9 +633,7 @@ class Container(object):
         else:
             return self._cursor
 
-    def _enqueue_element(
-        self, element,
-    ):
+    def _enqueue_element(self, element):
         """Create NewElement delta, fill it, and enqueue it.
 
         Parameters
@@ -1348,10 +1362,11 @@ class Container(object):
         ui_value = _get_widget_ui_value("radio", element, user_key=key)
         current_value = ui_value if ui_value is not None else index
 
-        if len(options) == 0 or options[current_value] is None:
-            return NoValue
-
-        return options[current_value]
+        return (
+            options[current_value]
+            if len(options) > 0 and options[current_value] is not None
+            else framework.NoValue
+        )
 
     @_with_element
     def selectbox(self, element, label, options, index=0, format_func=str, key=None):
@@ -1406,10 +1421,11 @@ class Container(object):
         ui_value = _get_widget_ui_value("selectbox", element, user_key=key)
         current_value = ui_value if ui_value is not None else index
 
-        if len(options) == 0 or options[current_value] is None:
-            return NoValue
-
-        return options[current_value]
+        return (
+            options[current_value]
+            if len(options) > 0 and options[current_value] is not None
+            else framework.NoValue
+        )
 
     @_with_element
     def slider(
@@ -1661,7 +1677,7 @@ class Container(object):
             element.file_uploader.progress = progress
 
         if data is None:
-            return NoValue
+            return framework.NoValue
 
         if encoding == "auto":
             if is_binary_string(data):
@@ -2374,10 +2390,10 @@ class Container(object):
         >>> my_chart.add_rows(some_fancy_name=df2)  # <-- name used as keyword
 
         """
-        if self._container is None:
+        if self._container is None or self._cursor is None:
             return self
 
-        if self._last_element:
+        if not self._cursor.is_locked:
             raise StreamlitAPIException("Only existing elements can `add_rows`.")
 
         # Accept syntax st.add_rows(df).
@@ -2398,19 +2414,18 @@ class Container(object):
         # (for example, st.line_chart() without any args), call the original
         # st.foo() element with new data instead of doing an add_rows().
         if (
-            self._delta_type in DELTAS_TYPES_THAT_MELT_DATAFRAMES
-            and self._last_index is None
+            self._cursor.props["delta_type"] in DELTAS_TYPES_THAT_MELT_DATAFRAMES
+            and self._cursor.props["last_index"] is None
         ):
             # IMPORTANT: This assumes delta types and st method names always
             # match!
-            st_method_name = self._delta_type
+            st_method_name = self._cursor.props["delta_type"]
             st_method = getattr(self, st_method_name)
             st_method(data, **kwargs)
             return
 
-        # XXX TODO get _last_index from locked_cursor.element
-        data, self._last_index = _maybe_melt_data_for_add_rows(
-            data, self._delta_type, self._last_index
+        data, self._cursor.props["last_index"] = _maybe_melt_data_for_add_rows(
+            data, self._cursor.props["delta_type"], self._cursor.props["last_index"]
         )
 
         msg = ForwardMsg_pb2.ForwardMsg()
@@ -2474,12 +2489,17 @@ def _clean_text(text):
     return textwrap.dedent(str(text)).strip()
 
 
-def _value_or_ctr(value, ctr):
-    """Return value, None or ctr.
+def _value_or_ctx(value, ctx):
+    """Return either value, or None, or ctx.
 
-    Widgets have return values unlike other elements and may want to return
-    `None`. We create a special `NoValue` class for this scenario since `None`
-    return values get replaced with a Container.
+    This is needed because Widgets have meaningful return values. This is
+    unlike other elements, which always return None. Then we internally replace
+    that None with a Container instance.
+
+    However, sometimes a widget may want to return None, and in this case it
+    should not be replaced by a Container. So we have a special NoValue
+    object that gets replaced by None.
+
     """
     if value is framework.NoValue:
         return None
@@ -2489,11 +2509,10 @@ def _value_or_ctr(value, ctr):
 
 
 def _enqueue_message(msg):
+    """Enqueues a ForwardMsg proto to send to the app."""
     ctx = get_report_ctx()
 
     if ctx is None:
-        # XXX Show error?
-        return False
+        raise NoSessionContext()
 
     ctx.enqueue(msg)
-    return True

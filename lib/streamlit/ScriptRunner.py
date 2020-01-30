@@ -229,7 +229,7 @@ class ScriptRunner(object):
 
         LOGGER.debug("Running script %s", rerun_data)
 
-        # Reset delta generator so it starts from index 0.
+        # Reset widget values.
         import streamlit as st
 
         st._reset()
