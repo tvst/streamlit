@@ -141,8 +141,8 @@ def _set_log_level():
 # in an alternative config.
 _config.on_config_parsed(_set_log_level)
 
-sidebar = _Container(container="sidebar")
-main = _Container(container="main")
+main = _DeltaGenerator(container=_BlockPath_pb2.BlockPath.MAIN)
+sidebar = _DeltaGenerator(container=_BlockPath_pb2.BlockPath.SIDEBAR)
 
 altair_chart = main.altair_chart  # noqa: E221
 area_chart = main.area_chart  # noqa: E221
