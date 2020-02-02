@@ -17,7 +17,7 @@
 
 # Python 2/3 compatibility
 from __future__ import print_function, division, unicode_literals, absolute_import
-from streamlit.compatibility import setup_2_3_shims
+from streamlit.compatibility import setup_2_3_shims, is_running_py3
 
 setup_2_3_shims(globals())
 
@@ -32,7 +32,6 @@ from datetime import datetime
 from datetime import date
 from datetime import time
 
-from streamlit import cursor
 from streamlit import caching
 from streamlit import config
 from streamlit import elements
@@ -308,9 +307,9 @@ class Container(object):
         # - None: if this is the running Container for a top-level
         #   container.
         # - RunningCursor: if this is the running Container for a
-        #   non-top-level container (created with ctx._block())
+        #   non-top-level container (created with ctr._block())
         # - LockedCursor: if this is a locked Container returned by some
-        #   other Container method. E.g. the ctx returned in ctx =
+        #   other Container method. E.g. the ctr returned in ctr =
         #   st.text("foo").
         #
         # You should never use this! Instead use self._cursor, which is a
@@ -327,7 +326,7 @@ class Container(object):
 
         def wrapper(*args, **kwargs):
             if name in streamlit_methods:
-                if self._container == "sidebar":
+                if self._container == BlockPath_pb2.BlockPath.SIDEBAR:
                     message = (
                         "Method `%(name)s()` does not exist for "
                         "`st.sidebar`. Did you mean `st.%(name)s()`?" % {"name": name}
@@ -559,6 +558,7 @@ class Container(object):
         #   def write(*args, unsafe_allow_html=False)
         # so we do this instead:
         unsafe_allow_html = kwargs.get("unsafe_allow_html", False)
+        out = []
 
         try:
             els = []
@@ -650,39 +650,34 @@ class Container(object):
         # Warn if we're called from within an @st.cache function
         caching.maybe_show_cached_st_function_warning(self)
 
-        msg = ForwardMsg_pb2.ForwardMsg()
-        cursor = self._get_cursor()
         rv = element.value
 
+        msg = ForwardMsg_pb2.ForwardMsg()
         msg.delta.new_element.CopyFrom(element._element)
 
         msg_was_enqueued = False
 
         # Only enqueue message if there's a container.
 
-        if self._container is not None:
-            assert self._container in ("sidebar", "main")
-
-            if self._container == "sidebar":
-                msg.metadata.parent_block.container = BlockPath_pb2.BlockPath.SIDEBAR
-            else:
-                msg.metadata.parent_block.container = BlockPath_pb2.BlockPath.MAIN
-
-            msg.metadata.parent_block.path[:] = cursor.path
-            msg.metadata.delta_id = cursor.index
+        if self._container and self._cursor:
+            msg.metadata.parent_block.container = self._container
+            msg.metadata.parent_block.path[:] = self._cursor.path
+            msg.metadata.delta_id = self._cursor.index
 
             if element._width is not None:
                 msg.metadata.element_dimension_spec.width = element._width
             if element._height is not None:
                 msg.metadata.element_dimension_spec.height = element._height
 
-            msg_was_enqueued = _enqueue_message(msg)
+            _enqueue_message(msg)
+            msg_was_enqueued = True
 
         if msg_was_enqueued:
             # Get a Container that is locked to the current element
             # position.
             output_ctr = Container(
-                container=self._container, cursor=cursor.get_locked_cursor(element),
+                container=self._container,
+                cursor=self._cursor.get_locked_cursor(element),
             )
         else:
             # If the message was not enqueued, just return self since it's a
@@ -2489,8 +2484,8 @@ def _clean_text(text):
     return textwrap.dedent(str(text)).strip()
 
 
-def _value_or_ctx(value, ctx):
-    """Return either value, or None, or ctx.
+def _value_or_ctr(value, ctr):
+    """Return either value, or None, or ctr.
 
     This is needed because Widgets have meaningful return values. This is
     unlike other elements, which always return None. Then we internally replace
