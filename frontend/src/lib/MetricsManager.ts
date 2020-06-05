@@ -119,6 +119,7 @@ export class MetricsManager {
       dev: IS_DEV_ENV,
       source: "browser",
       streamlitVersion: SessionInfo.current.streamlitVersion,
+      metricsVersion: 2, // Increment whenever we modify what metrics we send.
     }
 
     // Don't actually track events when in dev mode, just print them instead.
