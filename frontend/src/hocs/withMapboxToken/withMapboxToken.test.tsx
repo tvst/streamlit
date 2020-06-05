@@ -48,7 +48,7 @@ describe("withMapboxToken", () => {
       sessionId: "mockSessionId",
       streamlitVersion: "sv",
       pythonVersion: "pv",
-      installationId: "iid",
+      machineId: "iid",
       authorEmail: "ae",
       maxCachedMessageAge: 2,
       commandLine,

@@ -53,7 +53,7 @@ message Config {
 }
 
 message UserInfo {
-  string installation_id = 1;
+  string machine_id = 1;
   string email = 2;
 }
 

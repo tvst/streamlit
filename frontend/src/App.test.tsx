@@ -62,7 +62,7 @@ describe("App", () => {
       sessionId: "sessionId",
       streamlitVersion: "sv",
       pythonVersion: "pv",
-      installationId: "iid",
+      machineId: "iid",
       authorEmail: "ae",
       maxCachedMessageAge: 2,
       commandLine: "command line",

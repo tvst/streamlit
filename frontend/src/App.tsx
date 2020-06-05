@@ -319,7 +319,7 @@ export class App extends PureComponent<Props, State> {
       sessionId: sessionId,
       streamlitVersion: environmentInfo.streamlitVersion,
       pythonVersion: environmentInfo.pythonVersion,
-      installationId: userInfo.installationId,
+      machineId: userInfo.machineId,
       authorEmail: userInfo.email,
       maxCachedMessageAge: config.maxCachedMessageAge,
       commandLine: initializeMsg.commandLine,
@@ -430,7 +430,7 @@ export class App extends PureComponent<Props, State> {
     const { id: reportId, name: reportName, scriptPath } = newReportProto
 
     const newReportHash = hashString(
-      SessionInfo.current.installationId + scriptPath
+      SessionInfo.current.machineId + scriptPath
     )
 
     document.title = `${reportName} · Streamlit`

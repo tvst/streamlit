@@ -19,7 +19,7 @@ export interface Args {
   sessionId: string
   streamlitVersion?: string | null
   pythonVersion?: string | null
-  installationId?: string | null
+  machineId?: string | null
   authorEmail?: string | null
   maxCachedMessageAge?: number | null
   commandLine?: string | null
@@ -31,7 +31,7 @@ export class SessionInfo {
   public readonly sessionId: string
   public readonly streamlitVersion: string
   public readonly pythonVersion: string
-  public readonly installationId: string
+  public readonly machineId: string
   public readonly authorEmail: string
   public readonly maxCachedMessageAge: number
   public readonly commandLine: string
@@ -76,7 +76,7 @@ export class SessionInfo {
     sessionId,
     streamlitVersion,
     pythonVersion,
-    installationId,
+    machineId,
     authorEmail,
     maxCachedMessageAge,
     commandLine,
@@ -86,7 +86,7 @@ export class SessionInfo {
       sessionId == null ||
       streamlitVersion == null ||
       pythonVersion == null ||
-      installationId == null ||
+      machineId == null ||
       authorEmail == null ||
       maxCachedMessageAge == null ||
       commandLine == null ||
@@ -98,7 +98,7 @@ export class SessionInfo {
     this.sessionId = sessionId
     this.streamlitVersion = streamlitVersion
     this.pythonVersion = pythonVersion
-    this.installationId = installationId
+    this.machineId = machineId
     this.authorEmail = authorEmail
     this.maxCachedMessageAge = maxCachedMessageAge
     this.commandLine = commandLine

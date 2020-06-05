@@ -16,12 +16,15 @@ import os
 import platform
 import re
 import sys
+import uuid
 
 
-_system = platform.system()
-IS_WINDOWS = _system == "Windows"
-IS_DARWIN = _system == "Darwin"
-IS_LINUX_OR_BSD = (_system == "Linux") or ("BSD" in _system)
+system = platform.system()
+IS_LINUX = system == "Linux"
+IS_WINDOWS = system == "Windows"
+IS_DARWIN = system == "Darwin"
+IS_BSD = "BSD" in system
+IS_LINUX_OR_BSD = IS_LINUX or IS_BSD
 
 
 def is_pex():
@@ -58,3 +61,55 @@ def is_executable_in_path(name):
     from distutils.spawn import find_executable
 
     return find_executable(name) is not None
+
+
+def _get_actual_machine_id():
+    """Deterministic machine-specific ID.
+
+    Do not change this function lightly! It impacts our metrics.
+    """
+
+    machine_id = None
+
+    # We special-case Linux here because Docker containers (which usually run Linux) often return
+    # the same uuid.getnode() no matter where they're run, which messes up our metrics.
+    # (It would be cleaner to only special-case Linux *containers*, but since this code has already
+    # shipped it doesn't make sense to change it and break our metrics.)
+    if IS_LINUX:
+        try:
+            if os.path.isfile("/etc/machine-id"):
+                with open("/etc/machine-id", "r") as f:
+                    machine_id = f.read()
+                    # NOTE: File may be empty.
+
+            if not machine_id and os.path.isfile("/var/lib/dbus/machine-id"):
+                with open("/var/lib/dbus/machine-id", "r") as f:
+                    machine_id = f.read()
+
+            # In a perfect world, this would be the only "if" case here, but see comment above.
+            if not machine_id and os.path.isfile("/proc/self/cgroup"):
+                with open("/proc/self/cgroup", "r") as f:
+                    first_line = f.readline()
+                    # See https://forums.docker.com/t/get-a-containers-full-id-from-inside-of-itself/37237.
+                    if "docker" in first_line or "lxc" in first_line:
+                        machine_id = first_line
+
+        except:
+            # Do nothing. Fall back to getnode().
+            pass
+
+    if machine_id is None:
+        machine_id = str(uuid.getnode())
+
+    return machine_id
+
+
+def _get_mangled_machine_id():
+    """Get a deterministic unique ID for this machine, for use in out metrics.
+
+    Do not change this function lightly! It impacts our metrics.
+    """
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, _get_actual_machine_id()))
+
+
+machine_id = _get_mangled_machine_id()

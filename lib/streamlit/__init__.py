@@ -52,46 +52,17 @@ from streamlit import config as _config
 
 _LOGGER = _logger.get_logger("root")
 
-# Give the package a version.
-import pkg_resources as _pkg_resources
-import uuid as _uuid
-import subprocess
-import platform
-import os
-from typing import Any, List, Tuple, Type
-
-# This used to be pkg_resources.require('streamlit') but it would cause
-# pex files to fail. See #394 for more details.
-__version__ = _pkg_resources.get_distribution("streamlit").version
-
-# Deterministic Unique Streamlit User ID
-if (
-    platform.system() == "Linux"
-    and os.path.isfile("/etc/machine-id") == False
-    and os.path.isfile("/var/lib/dbus/machine-id") == False
-):
-    print("Generate machine-id")
-    subprocess.run(["sudo", "dbus-uuidgen", "--ensure"])
-
-machine_id = str(_uuid.getnode())
-if os.path.isfile("/etc/machine-id"):
-    with open("/etc/machine-id", "r") as f:
-        machine_id = f.read()
-elif os.path.isfile("/var/lib/dbus/machine-id"):
-    with open("/var/lib/dbus/machine-id", "r") as f:
-        machine_id = f.read()
-
-__installation_id__ = str(_uuid.uuid5(_uuid.NAMESPACE_DNS, machine_id))
-
-
 import contextlib as _contextlib
+import json as _json
+import pkg_resources as _pkg_resources
 import re as _re
 import sys as _sys
 import textwrap as _textwrap
 import threading as _threading
 import traceback as _traceback
 import types as _types
-import json as _json
+import typing as _typing
+
 import numpy as _np
 
 from streamlit import code_util as _code_util
@@ -110,10 +81,16 @@ from streamlit.util import functools_wraps as _functools_wraps
 # syntax pass mypy checking with implicit_reexport disabled.
 from streamlit.caching import cache as cache  # noqa: F401
 
+
 # This is set to True inside cli._main_run(), and is False otherwise.
 # If False, we should assume that DeltaGenerator functions are effectively
 # no-ops, and adapt gracefully.
 _is_running_with_streamlit = False
+
+
+# This used to be pkg_resources.require('streamlit') but it would cause
+# pex files to fail. See #394 for more details.
+__version__ = _pkg_resources.get_distribution("streamlit").version
 
 
 def _set_log_level():
@@ -226,7 +203,7 @@ _HELP_TYPES = (
     _types.FunctionType,
     _types.MethodType,
     _types.ModuleType,
-)  # type: Tuple[Type[Any], ...]
+)  # type: _typing.Tuple[_typing.Type[_typing.Any], ...]
 
 
 def write(*args, **kwargs):
@@ -342,7 +319,7 @@ def write(*args, **kwargs):
 
     """
     try:
-        string_buffer = []  # type: List[str]
+        string_buffer = []  # type: _typing.List[str]
         unsafe_allow_html = kwargs.get("unsafe_allow_html", False)
 
         def flush_buffer():
@@ -567,7 +544,7 @@ def echo(code_location="above"):
         yield
         frame = _traceback.extract_stack()[-3]
         end_line = frame.lineno
-        lines_to_display = []  # type: List[str]
+        lines_to_display = []  # type: _typing.List[str]
         with _source_util.open_python_file(filename) as source_file:
             source_lines = source_file.readlines()
             lines_to_display.extend(source_lines[start_line:end_line])

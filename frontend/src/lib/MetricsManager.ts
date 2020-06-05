@@ -75,7 +75,7 @@ export class MetricsManager {
       if (SessionInfo.current.authorEmail !== "") {
         userTraits["authoremail"] = SessionInfo.current.authorEmail
       }
-      this.identify(SessionInfo.current.installationId, userTraits)
+      this.identify(SessionInfo.current.machineId, userTraits)
       this.sendPendingEvents()
     }
 
