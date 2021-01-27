@@ -1,5 +1,5 @@
 import React from "react"
-import { ONLINE_DOCS_URL, TEAMS_URL } from "urls"
+import { SHARING_DOCS_URL, TEAMS_URL } from "urls"
 import { IDeployErrorDialog } from "./types"
 
 function NoRepositoryDetected(): IDeployErrorDialog {
@@ -7,14 +7,14 @@ function NoRepositoryDetected(): IDeployErrorDialog {
     title: "Unable to deploy app",
     body: (
       <>
-        <p>Could not find a remote repository hosted on Github.</p>
+        <p>Could not find a remote repository hosted on GitHub.</p>
         <p>How Streamlit sharing works:</p>
         <ul>
           <li>
-            To deploy a public app, you must first put it in a public Github
+            To deploy a public app, you must first put it in a public GitHub
             repo. See{" "}
             <a
-              href={ONLINE_DOCS_URL}
+              href={SHARING_DOCS_URL}
               rel="noopener noreferrer"
               target="_blank"
             >

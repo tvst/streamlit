@@ -113,6 +113,9 @@ export interface Props {
   closeDialog: () => void
 
   isDeployErrorModalOpen: boolean
+
+  /** Force the menu to re-render when session info is initialized, so the deploy button can update. */
+  wasSessionInfoInitialized: boolean
 }
 
 const getOpenInWindowCallback = (url: string) => (): void => {
@@ -254,7 +257,7 @@ function MainMenu(props: Props): ReactElement {
     if (gitState === GitStates.HEAD_DETACHED) {
       const dialog = DetachedHead()
 
-      showDeployError(dialog.title, dialog.body)
+      showDeployError(dialog.title, dialog.body, getDeployAppUrl(gitInfo))
 
       return
     }
@@ -270,7 +273,7 @@ function MainMenu(props: Props): ReactElement {
     if (module && uncommittedFiles?.length) {
       const dialog = UncommittedChanges(module)
 
-      showDeployError(dialog.title, dialog.body)
+      showDeployError(dialog.title, dialog.body, getDeployAppUrl(gitInfo))
 
       return
     }

@@ -19,6 +19,8 @@ export const STREAMLIT_HOME_URL = "https://streamlit.io"
 export const DEPLOY_URL = "https://share.streamlit.io/deploy"
 export const STREAMLIT_SHARE_URL = "https://streamlit.io/sharing"
 export const ONLINE_DOCS_URL = "https://docs.streamlit.io"
+export const SHARING_DOCS_URL =
+  "https://docs.streamlit.io/en/stable/deploy_streamlit_app.html"
 export const COMMUNITY_URL = "https://discuss.streamlit.io"
 export const TEAMS_URL = "https://streamlit.io/for-teams"
 export const BUG_URL =

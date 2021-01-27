@@ -3,12 +3,12 @@ import { IDeployErrorDialog } from "./types"
 
 function RepoIsAhead(): IDeployErrorDialog {
   return {
-    title: "Unable to deploy app",
+    title: "Are you sure you want to deploy this app?",
     body: (
       <>
         <p>
           This Git repo has uncommitted changes. You may want to commit them
-          before continuing.
+          and push to GitHub before continuing.
         </p>
       </>
     ),
